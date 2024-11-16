@@ -9,7 +9,7 @@
 
 class Pane
   attr_accessor :startx, :starty, :width, :height, :fg, :bg
-  attr_reader :x, :y, :w, :h
+  attr_accessor :x, :y, :w, :h
   attr_accessor :border, :scroll, :text, :ix, :align, :prompt
   def initialize(startx=1, starty=1, width=1, height=1, fg=nil, bg=nil)
     @startx, @starty, @width, @height, @fg, @bg = startx, starty, width, height, fg, bg
