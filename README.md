@@ -14,7 +14,7 @@ Simple. One file. No external requirements.
 # Installation
 Clone this repo and drop `lib/rcurses.rb` into `/usr/lib/ruby/vendor_ruby/`
 
-Or simply `gem install rcurses` (when I get around to create the gem and this comment is removed).
+Or simply run `gem install rcurses`.
 
 To use this library do:
 ```
