@@ -3,7 +3,7 @@
 ![Ruby](https://img.shields.io/badge/language-Ruby-red) ![Unlicense](https://img.shields.io/badge/license-Unlicense-green) ![Stay Amazing](https://img.shields.io/badge/Stay-Amazing-important)
 
 # Why?
-<img src="img/rcurses-logo.jpg" align="left" width="150" height="150"> Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
+<img src="img/rcurses-logo.png" align="left" width="150" height="150"> Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
 
 # Design principles
 Simple. One file. No external requirements.
