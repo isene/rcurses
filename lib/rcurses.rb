@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    0.1 : Initial upload to GitHub
+# Version:    0.2 : Initial upload to GitHub
 
 class Pane
   attr_accessor :startx, :starty, :width, :height, :fg, :bg
