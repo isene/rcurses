@@ -190,6 +190,19 @@ while $stdin.ready?
 end
 ```
 
+# Example
+
+Try this in `irb`:
+```
+require 'rcurses'
+mypane = Pane.new("@maxcol/2", 30, 30, 10, 19, 229)
+mypane.border = true
+mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
+mypane.refresh
+mypane.edit
+```
+... and then try to add some bold text by enclosing it in '*' and italics by enclosing text in '/'. Then press 'ctrl-s' to save your edited text - and then type `mypane.refresh` to see the result.
+
 # Not yet implemented
 Let me know what other features you like to see.
 
