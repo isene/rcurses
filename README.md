@@ -95,6 +95,8 @@ r              | Set text to be printed in reverse colors (example: `"TEST".r`)
 c(code)        | Use coded format like "TEST".c("204,45,bui") to print "TEST" in bold, underline italic, fg=204 and bg=45 (the format is `.c("fg,bg,biulr"))
 pure           | Strip text of any "dressing" (example: with `text = "TEST".b`, you will have bold text in the variable `text`, then with `text.pure` it will show "uncoded" or pure text)
 
+PS: Blink does not work in conjunction with setting a background color (tested with urxvt).
+
 # module Cursor
 Create a new cursor object with `mycursor = Cursor`. Then you can apply the following methods to `mycursor`:
 
