@@ -12,9 +12,7 @@ Having struggled with the venerable curses library and the ruby interface to it 
 Simple. One file. No external requirements.
 
 # Installation
-Clone this repo and drop `lib/rcurses.rb` into `/usr/lib/ruby/vendor_ruby/`
-
-Or simply run `gem install rcurses`.
+Simply run `gem install rcurses`.
 
 To use this library do:
 ```
