@@ -31,18 +31,18 @@ require 'rcurses'
 * The class `Pane` to create and manilpulate panes/boxes
 * Extensions to the class String to print text in various degrees of fancy and also strip any fanciness
 * A module `Cursor` to give you cursor movements around the terminal
-* A top level function `getchr` to capture a single character input from the user (much better than any Ruby built-ins)
+* A module `Rinput` providing the function `getchr` to capture a single character input from the user (much better than any Ruby built-ins)
 
 # class Pane
 To create a pane do something like this:
 ```
-mypane = Pane.new(80, 30, 30, 10, 19, 229)
+mypane = Rcurses::Pane.new(80, 30, 30, 10, 19, 229)
 ```
 This will create a pane/box starting at terminal column/x 80 and row/y 30 with the width of 30 characters and a hight of 10 characters and with the foreground color 19 and background color 229 (from the 256 choices available)
 
 The format for creating a pane is:
 ```
-Pane.new(startx, starty, width, height, foregroundcolor, backgroundcolor)
+Rcurses::Pane.new(startx, starty, width, height, foregroundcolor, backgroundcolor)
 ```
 You can drop the last two 256-color codes to create a pane with the defaults for your terminal. Also, you can add anything as `startx`, `starty`, `width` or `height` as those values will be run through a Ruby eval and stored in readable variables `x`, `y`, `w` and `h` respectively. So, a hight value of "@maxrow/2" is valid to create a pane with the height of half the terminal height (the integer corresponding to half the terminal height will then be accessible as the variable `h`). Use the variables @maxrow for terminal height and @maxcol for terminal width.
 
@@ -121,10 +121,14 @@ scroll_up         | Scroll display up one line
 scroll_down       | Scroll display down one line
 clear_screen_down | Clear screen down from current row
 
-# function getchr
+# Rinput::getchr
 rcurses provides a vital extension to Ruby in reading characters entered by the user. This is especially needed for curses applications where readline inputs are required.
 
-Simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example could be any of the following:
+To include this into your curses program, first:
+```
+include Rinput
+```
+Then simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example could be any of the following:
 
 Key pressed     | string returned
 ----------------|----------------------------------------------------------
