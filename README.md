@@ -121,14 +121,11 @@ scroll_up         | Scroll display up one line
 scroll_down       | Scroll display down one line
 clear_screen_down | Clear screen down from current row
 
-# Rinput::getchr
+# The function getchr
 rcurses provides a vital extension to Ruby in reading characters entered by the user. This is especially needed for curses applications where readline inputs are required.
-
-To include this into your curses program, first:
+The function getchr is automatically included in your arsenal when you first do `include rcurses`.
 ```
-include Rinput
-```
-Then simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example could be any of the following:
+Simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example) could be any of the following:
 
 Key pressed     | string returned
 ----------------|----------------------------------------------------------
