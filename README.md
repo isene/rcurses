@@ -124,7 +124,7 @@ clear_screen_down | Clear screen down from current row
 # The function getchr
 rcurses provides a vital extension to Ruby in reading characters entered by the user. This is especially needed for curses applications where readline inputs are required.
 The function getchr is automatically included in your arsenal when you first do `include rcurses`.
-```
+
 Simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example) could be any of the following:
 
 Key pressed     | string returned
