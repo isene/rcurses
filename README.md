@@ -44,7 +44,7 @@ The format for creating a pane is:
 ```
 Rcurses::Pane.new(startx, starty, width, height, foregroundcolor, backgroundcolor)
 ```
-You can drop the last two 256-color codes to create a pane with the defaults for your terminal. Also, you can add anything as `startx`, `starty`, `width` or `height` as those values will be run through a Ruby eval and stored in readable variables `x`, `y`, `w` and `h` respectively. So, a hight value of "@maxrow/2" is valid to create a pane with the height of half the terminal height (the integer corresponding to half the terminal height will then be accessible as the variable `h`). Use the variables @maxrow for terminal height and @maxcol for terminal width.
+You can drop the last two 256-color codes to create a pane with the defaults for your terminal. Also, you can add anything as `startx`, `starty`, `width` or `height` as those values will be run through a Ruby eval and stored in readable variables `x`, `y`, `w` and `h` respectively. So, a hight value of "Rcurses::MAXh/2" is valid to create a pane with the height of half the terminal height (the integer corresponding to half the terminal height will then be accessible as the variable `h`). Use the variables `Rcurses::MAXh` for terminal height and `Rcurses::MAXw` for terminal width.
 
 Avaliable properties/variables:
 
@@ -196,13 +196,15 @@ end
 Try this in `irb`:
 ```
 require 'rcurses'
-mypane = Pane.new("@maxcol/2", 30, 30, 10, 19, 229)
+mypane = Pane.new(Rcurses::MAXw/2, 30, 30, 10, 19, 229)
 mypane.border = true
 mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
 mypane.refresh
 mypane.edit
 ```
 ... and then try to add some bold text by enclosing it in '*' and italics by enclosing text in '/'. Then press 'ctrl-s' to save your edited text - and then type `mypane.refresh` to see the result.
+
+And - try running the example file `rcurses_example.rb`.
 
 # Not yet implemented
 Let me know what other features you like to see.
