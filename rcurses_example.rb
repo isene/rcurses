@@ -20,8 +20,6 @@ pane_left.refresh
 pane_right.refresh 
 pane_bottom.editline
 
-pane_bottom.prompt = "You wrote: " + pane_bottom.text.pure.i + " (now hit ENTER again)"
-pane_right.text   += "\n\n" + pane_bottom.text.pure.i.b + "  "
-pane_right.refresh
+pane_bottom.prompt = "You wrote: " + pane_bottom.text.i + " (now hit ENTER again)"
 pane_bottom.text   = ""
 pane_bottom.editline
