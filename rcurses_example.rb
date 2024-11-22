@@ -10,7 +10,7 @@ pane_right  = Rcurses::Pane.new(Rcurses::MAXw/2 + 1,             2,     Rcurses:
 
 pane_left.border   = true
 
-pane_top.text      = "This is an information line at the top".b.i
+pane_top.text      = Time.now.to_s[0..15].b + "   Welcome to the rcurses example program"
 pane_left.text     = `ls --color`
 pane_right.text    = "Output of lsblk:\n\n" + `lsblk`
 pane_bottom.prompt = "Enter any text and press ENTER: ".b
@@ -20,6 +20,12 @@ pane_left.refresh
 pane_right.refresh 
 pane_bottom.editline
 
-pane_bottom.prompt = "You wrote: " + pane_bottom.text.i + " (now hit ENTER again)"
+pane_mid           = Rcurses::Pane.new(Rcurses::MAXw/2 - 10, Rcurses::MAXh/2 - 5, 20, 10, 18,  254)
+pane_mid.border    = true
+pane_mid.text      = "You wrote: \n \n" + pane_bottom.text.i
+pane_mid.align     = "c"
+pane_mid.refresh
+
+pane_bottom.prompt = "Now hit ENTER again "
 pane_bottom.text   = ""
 pane_bottom.editline
