@@ -25,7 +25,7 @@ pane_bottom.editline # Do not use a refresh before editline
 # Then create a "pop-up" pane in the middle of the screen
 pane_mid             = Rcurses::Pane.new(Rcurses::MAXw/2 - 10, Rcurses::MAXh/2 - 5, 20, 10, 18,  254)
 pane_mid.border      = true
-pane_mid.text        = "You wrote: \n \n" + pane_bottom.text.i
+pane_mid.text        = "You wrote:" + "\n" + pane_bottom.text.i
 pane_mid.align       = "c"
 pane_mid.refresh
 
