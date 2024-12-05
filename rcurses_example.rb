@@ -2,12 +2,14 @@
 
 require 'rcurses'
 
+@max_h, @max_w = IO.console.winsize
+
 # Start by creating the panes; Format:
-# pane      = Rcurses::Pane.new(             startx,        starty,               width,            height,  fg,  bg)
-pane_top    = Rcurses::Pane.new(                  1,             1,       Rcurses::MAXw,                 1, 255, 236)
-pane_bottom = Rcurses::Pane.new(                  1, Rcurses::MAXh,       Rcurses::MAXw,                 1, 236, 254)
-pane_left   = Rcurses::Pane.new(                  2,             3, Rcurses::MAXw/2 - 2, Rcurses::MAXh - 4,  52, nil)
-pane_right  = Rcurses::Pane.new(Rcurses::MAXw/2 + 1,             2,     Rcurses::MAXw/2, Rcurses::MAXh - 2, 255,  52)
+# pane      = Rcurses::Pane.new(      startx, starty,        width,     height,  fg,  bg)
+pane_top    = Rcurses::Pane.new(           1,      1,       @max_w,          1, 255, 236)
+pane_bottom = Rcurses::Pane.new(           1, @max_h,       @max_w,          1, 236, 254)
+pane_left   = Rcurses::Pane.new(           2,      3, @max_w/2 - 2, @max_h - 4,  52, nil)
+pane_right  = Rcurses::Pane.new(@max_w/2 + 1,      2,     @max_w/2, @max_h - 2, 255,  52)
 
 pane_left.border     = true # Adding a border to the left pane
 
@@ -23,7 +25,7 @@ pane_right.refresh   # ...and the right pane
 pane_bottom.editline # Do not use a refresh before editline
 
 # Then create a "pop-up" pane in the middle of the screen
-pane_mid             = Rcurses::Pane.new(Rcurses::MAXw/2 - 10, Rcurses::MAXh/2 - 5, 20, 10, 18,  254)
+pane_mid             = Rcurses::Pane.new(@max_w/2 - 10, @max_h/2 - 5, 20, 10, 18,  254)
 pane_mid.border      = true
 pane_mid.text        = "You wrote:" + "\n" + pane_bottom.text.i
 pane_mid.align       = "c"

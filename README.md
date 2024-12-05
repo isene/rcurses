@@ -9,7 +9,7 @@
 Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
 
 # Design principles
-Simple. One file. No external requirements.
+Simple. One file. Minimum of external dependencies.
 
 # Installation
 Simply run `gem install rcurses`.
@@ -44,7 +44,15 @@ The format for creating a pane is:
 ```
 Rcurses::Pane.new(startx, starty, width, height, foregroundcolor, backgroundcolor)
 ```
-You can drop the last two 256-color codes to create a pane with the defaults for your terminal. Also, you can add anything as `startx`, `starty`, `width` or `height` as those values will be run through a Ruby eval and stored in readable variables `x`, `y`, `w` and `h` respectively. So, a hight value of "Rcurses::MAXh/2" is valid to create a pane with the height of half the terminal height (the integer corresponding to half the terminal height will then be accessible as the variable `h`). Use the variables `Rcurses::MAXh` for terminal height and `Rcurses::MAXw` for terminal width.
+You can drop the last two 256-color codes to create a pane with the defaults for your terminal. 
+
+You can add anything as `startx`, `starty`, `width` or `height` as those values will be evaluated and stored in readable variables `x`, `y`, `w` and `h` respectively. 
+
+By adding values for the terminal size in your program:
+```
+@max_h, @max_w = IO.console.winsize
+```
+...you can use these values to create proportinally sized panes. So, a hight value of "@max_h/2" is valid to create a pane with the height of half the terminal height (the integer corresponding to half the terminal height will then be accessible as the variable `h`). Use the variables `@max_h` for terminal height and `@max_w` for terminal width.
 
 Avaliable properties/variables:
 
@@ -196,7 +204,8 @@ end
 Try this in `irb`:
 ```
 require 'rcurses'
-mypane = Pane.new(Rcurses::MAXw/2, 30, 30, 10, 19, 229)
+@max_h, @max_w = IO.console.winsize
+mypane = Pane.new(@maxw/2, 30, 30, 10, 19, 229)
 mypane.border = true
 mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
 mypane.refresh

@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name          = 'rcurses'
-  s.version       = '1.2'
+  s.version       = '2.0'
   s.licenses      = ['Unlicense']
   s.summary       = "rcurses - An alternative curses library written in pure Ruby"
-  s.description   = "Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. New in 1.2: Handling original newlines with ansi carry-over."
+  s.description   = "Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. New in 2.0: Complete code refactoring."
   s.authors       = ["Geir Isene"]
   s.email         = 'g@isene.com'
   s.homepage      = 'https://isene.com/'
@@ -11,4 +11,5 @@ Gem::Specification.new do |s|
   s.files         = Dir['lib/**/*', 'extconf.rb', 'rcurses_example.rb', 'README.md']
   s.require_paths = ['lib']
   s.extensions    = ['extconf.rb'] # Include the extconf.rb script
+  s.add_runtime_dependency 'clipboard', '~> 2.0'
 end
