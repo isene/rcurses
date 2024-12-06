@@ -8,8 +8,7 @@ Gem::Specification.new do |s|
   s.email         = 'g@isene.com'
   s.homepage      = 'https://isene.com/'
   s.metadata      = { "source_code_uri" => "https://github.com/isene/rcurses" }
-  s.files         = Dir['lib/**/*', 'rcurses_example.rb', 'README.md']
+  s.files         = Dir['{lib,examples}/**/*', 'README.md', 'LICENSE']
   s.require_paths = ['lib']
-  s.extensions    = ['extconf.rb'] # Include the extconf.rb script
   s.add_runtime_dependency 'clipboard', '~> 2.0'
 end

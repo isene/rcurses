@@ -9,7 +9,6 @@
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
-require 'clipboard'  # Ensure the 'clipboard' gem is installed
 
 require_relative 'string_extensions'
 require_relative 'rcurses/cursor'

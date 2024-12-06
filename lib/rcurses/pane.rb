@@ -1,7 +1,8 @@
 module Rcurses
   class Pane
-    include Rcurses::Cursor
-    include Rcurses::Input
+    require 'clipboard'  # Ensure the 'clipboard' gem is installed
+    include Cursor
+    include Input
     attr_accessor :startx, :starty, :width, :height, :fg, :bg
     attr_accessor :x, :y, :w, :h
     attr_accessor :border, :scroll, :text, :ix, :align, :prompt
