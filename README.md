@@ -4,12 +4,13 @@
 
 <img src="img/rcurses-logo.png" width="150" height="150">
 
+Create curses applications for the terminal easier than ever.
 
 # Why?
 Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
 
 # Design principles
-Simple. One file. Minimum of external dependencies.
+Simple and with minimum of external dependencies.
 
 # Installation
 Simply run `gem install rcurses`.
@@ -104,7 +105,7 @@ pure           | Strip text of any "dressing" (example: with `text = "TEST".b`, 
 PS: Blink does not work in conjunction with setting a background color in urxvt. It does work in gnome-terminal. But the overall performance in urxvt as orders of magnitude better than gnome-terminal.
 
 # module Cursor
-Create a new cursor object with `mycursor = Cursor`. Then you can apply the following methods to `mycursor`:
+To use this module, first do `include Rcurses::Cursor`. Create a new cursor object with `mycursor = Cursor`. Then you can apply the following methods to `mycursor`:
 
 Method            | Description
 ------------------|---------------------------------------------------------------
@@ -128,10 +129,12 @@ clear_line_after  | Erase from the current position (inclusive) to the end of th
 scroll_up         | Scroll display up one line
 scroll_down       | Scroll display down one line
 clear_screen_down | Clear screen down from current row
+hide_cursor       | Hide the cursor
+show_cursor       | Show cursor
 
 # The function getchr
 rcurses provides a vital extension to Ruby in reading characters entered by the user. This is especially needed for curses applications where readline inputs are required.
-The function getchr is automatically included in your arsenal when you first do `include rcurses`.
+The function getchr is automatically included in your arsenal when you first do `include Rcurses::Input`.
 
 Simply use `chr = getchr` in a program to read any character input by the user. The returning code (the content of `chr` in this example) could be any of the following:
 

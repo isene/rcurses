@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    2.2: Added example focus_panes.rb and hide_cursor/show_cursor as Cursor functions
+# Version:    2.3: Updated docs.
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
