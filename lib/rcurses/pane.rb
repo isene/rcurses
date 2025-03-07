@@ -287,6 +287,7 @@ module Rcurses
       begin
         # Switch to raw mode without echoing input
         STDIN.raw!
+        Rcurses::Cursor.show
         # Prepare content for editing, replacing newlines with a placeholder
         content = @text.pure.gsub("\n", "¬\n")
         # Initialize cursor position and indices
@@ -384,12 +385,14 @@ module Rcurses
         # Restore terminal mode
         STDIN.cooked!
       end
+      Rcurses::Cursor.hide
     end
 
     def editline
       begin
         # Switch to raw mode without echo
         STDIN.raw!
+        Rcurses::Cursor.show
 
         # Initialize position and dimensions
         @x = @startx.call
@@ -468,6 +471,7 @@ module Rcurses
         # Restore terminal mode
         STDIN.cooked!
       end
+      Rcurses::Cursor.hide
     end
 
     private

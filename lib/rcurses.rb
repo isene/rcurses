@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    2.3: Updated docs.
+# Version:    2.4: Show cursor on edit. Changed hide_cursor and show_cursor to hide and show.
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

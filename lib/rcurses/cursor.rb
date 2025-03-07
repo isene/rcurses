@@ -41,7 +41,7 @@ module Rcurses
     def clear_screen_down; print(CSI + 'J');               end # Clear screen down from current row
     def scroll_up;         print(ESC + 'M');               end # Scroll display up one line
     def scroll_down;       print(ESC + 'D');               end # Scroll display down one line
-    def hide_cursor;       print(CSI + '?25l');            end # Scroll display down one line
-    def show_cursor;       print(CSI + '?25h');            end # Scroll display down one line
+    def hide;              print(CSI + '?25l');            end # Scroll display down one line
+    def show;              print(CSI + '?25h');            end # Scroll display down one line
   end
 end
