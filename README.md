@@ -114,12 +114,13 @@ restore           | Restore cursor position
 pos               | Query cursor current position (example: `row,col = mycursor.pos`)
 colget            | Query cursor current cursor col/x position (example: `row = mycursor.rowget`)
 rowget            | Query cursor current cursor row/y position (example: `row = mycursor.rowget`)         
+set(c = 1, r = 1) | Set the position of the cursor to row/y,col/x (example: `mycursor.set(row,col)`) (default = top row, first column)
+col(c = 1)        | Cursor moves to the nth position horizontally in the current line (default = first column)
+row(r = 1)        | Cursor moves to the nth position vertically in the current column (default = first/top row)
 up(n = 1)         | Move cursor up by n (default is 1 character up)
 down(n = 1)       | Move cursor down by n (default is 1 character down)
 left(n = 1)       | Move cursor backward by n (default is one character)
 right(n = 1)      | Move cursor forward by n (default is one character)
-col(n = 1)        | Cursor moves to the nth position horizontally in the current line (default = first column)
-row(n = 1)        | Cursor moves to the nth position vertically in the current column (default = first/top row)
 next_line)        | Move cursor down to beginning of next line
 prev_line)        | Move cursor up to beginning of previous line
 clear_char(n = 1) | Erase n characters from the current cursor position (default is one character)

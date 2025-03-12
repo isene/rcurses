@@ -58,6 +58,8 @@ module Rcurses
       when "\u0005" then chr = "C-E"
       when "\u0006" then chr = "C-F"
       when "\u0007" then chr = "C-G"
+      when "\u0008" then chr = "C-H"
+      when "\u000A" then chr = "C-J"
       when "\u000B" then chr = "C-K"
       when "\u000C" then chr = "C-L"
       when "\u000D" then chr = "C-M"
@@ -66,6 +68,7 @@ module Rcurses
       when "\u0010" then chr = "C-P"
       when "\u0011" then chr = "C-Q"
       when "\u0012" then chr = "C-R"
+      when "\u0013" then chr = "C-S"
       when "\u0014" then chr = "C-T"
       when "\u0015" then chr = "C-U"
       when "\u0016" then chr = "C-V"
@@ -73,7 +76,6 @@ module Rcurses
       when "\u0019" then chr = "C-Y"
       when "\u001A" then chr = "C-Z"
       when "\u0017" then chr = "WBACK"
-      when "\u0013" then chr = "C-S"
       when /[[:print:]]/ then chr = c
       else chr = ""
       end

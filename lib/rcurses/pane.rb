@@ -201,6 +201,11 @@ module Rcurses
       @txt
     end
 
+    def puts(txt)
+      @text = txt
+      refresh
+    end
+    
     def textformat(cont)
       # Split the content by '\n'
       lines = cont.split("\n")
