@@ -121,8 +121,8 @@ up(n = 1)         | Move cursor up by n (default is 1 character up)
 down(n = 1)       | Move cursor down by n (default is 1 character down)
 left(n = 1)       | Move cursor backward by n (default is one character)
 right(n = 1)      | Move cursor forward by n (default is one character)
-next_line)        | Move cursor down to beginning of next line
-prev_line)        | Move cursor up to beginning of previous line
+next_line         | Move cursor down to beginning of next line
+prev_line         | Move cursor up to beginning of previous line
 clear_char(n = 1) | Erase n characters from the current cursor position (default is one character)
 clear_line        | Erase the entire current line and return to beginning of the line
 clear_line_before | Erase from the beginning of the line up to and including the current cursor position
@@ -202,6 +202,8 @@ while $stdin.ready?
   chr += $stdin.getc
 end
 ```
+You can also pass two parameters to `getchr` with `getchr(min, time)` where `min` instructs getchr to wait for the minimum number of characters to return (not very useful) - and `time` is the timeout for waiting (can be very useful). You can happily call `getchr` without these parameters.
+
 
 # Example
 

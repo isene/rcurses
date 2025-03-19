@@ -1,8 +1,8 @@
 module Rcurses
   module Input
-    def getchr
+    def getchr(m = nil, t = nil)
       # Function to process key presses
-      c = $stdin.getch
+      c = $stdin.getch(min: m, time: t)
       case c
       when "\e"    # ANSI escape sequences
         return "ESC" if !$stdin.ready?
