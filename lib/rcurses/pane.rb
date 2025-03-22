@@ -13,6 +13,10 @@ module Rcurses
       @starty  = starty.is_a?(Proc) ? starty : -> { starty }
       @width   = width.is_a?(Proc)  ? width  : -> { width  }
       @height  = height.is_a?(Proc) ? height : -> { height }
+      @x       = @startx.call
+      @y       = @starty.call
+      @w       = @width.call
+      @h       = @height.call
       @fg, @bg = fg, bg
       @text    = ""              # Initialize text variable
       @align   = "l"             # Default alignment
@@ -26,6 +30,12 @@ module Rcurses
       @startx = -> { @x + x }
       @starty = -> { @y + y }
       refresh
+    end
+
+    def ask(prompt, text)
+      @prompt = prompt
+      @text   = text
+      editline
     end
 
     def refresh(cont = @text)

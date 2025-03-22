@@ -60,10 +60,11 @@ class String
     result
   end
 
-  # Injects the given string at the given visible character position.
-  # A negative position is treated as an insertion at the end.
+  # Inserts the given substring at the provided visible character position.
+  # A negative position means insertion at the end.
+  # When inserting at the end and the string ends with an ANSI escape sequence,
+  # the insertion is placed before that trailing ANSI sequence.
   def inject(insertion, pos)
-    # Work on visible text; if pos is negative, set it to the length (i.e. end).
     pure_text = self.pure
     visible_length = pure_text.length
     pos = visible_length if pos < 0
@@ -74,7 +75,7 @@ class String
     injected = false
 
     while i < self.length
-      if self[i] == "\e" # ANSI escape sequence – copy whole sequence without counting
+      if self[i] == "\e"  # Start of an ANSI sequence.
         if m = self[i..-1].match(/\A(\e\[\d+(?:;\d+)*m)/)
           result << m[1]
           i += m[1].length
@@ -83,7 +84,6 @@ class String
           i += 1
         end
       else
-        # At the point when we've output exactly pos visible characters, do the injection.
         if count == pos && !injected
           result << insertion
           injected = true
@@ -93,10 +93,18 @@ class String
         i += 1
       end
     end
-    # In case pos equals the total visible length (i.e. insertion at the end) and
-    # no injection has occurred inside the loop, append now.
-    result << insertion unless injected
+
+    # If we haven't injected (i.e. pos equals visible_length),
+    # check for a trailing ANSI sequence and insert before it.
+    unless injected
+      if result =~ /(\e\[\d+(?:;\d+)*m)\z/
+        trailing = $1
+        result = result[0...-trailing.length] + insertion + trailing
+      else
+        result << insertion
+      end
+    end
+
     result
   end
 end
-

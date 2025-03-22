@@ -1,14 +1,21 @@
 module Rcurses
   module Input
-    def getchr(m = nil, t = nil)
-      # Function to process key presses
-      c = $stdin.getch(min: m, time: t)
+    def getchr(t = nil)
+      # Wait for input up to t seconds; if none, return nil (or a timeout indicator)
+      if t && !IO.select([$stdin], nil, nil, t)
+        return nil
+      end
+
+      c = $stdin.getch
       case c
-      when "\e"    # ANSI escape sequences
-        return "ESC" if !$stdin.ready?
+      when "\e"
+        # For escape sequences, use a very short timeout to check for extra bytes
+        unless IO.select([$stdin], nil, nil, 0.001)
+          return "ESC"
+        end
         second_char = $stdin.getc
         case second_char
-        when '['   # CSI
+        when '['
           third_char = $stdin.getc
           case third_char
           when 'A' then chr = "UP"
@@ -34,16 +41,18 @@ module Rcurses
           when '4', '8'
             fourth_char = $stdin.getc
             chr = fourth_char == '~' ? "END" : ""
-          else chr = ""
+          else
+            chr = ""
           end
-        when 'O'   # Function keys
+        when 'O'
           third_char = $stdin.getc
           case third_char
           when 'a' then chr = "C-UP"
           when 'b' then chr = "C-DOWN"
           when 'c' then chr = "C-RIGHT"
           when 'd' then chr = "C-LEFT"
-          else chr = ""
+          else
+            chr = ""
           end
         else
           chr = ""

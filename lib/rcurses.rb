@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    2.4.2: Added parameters 'min' and 'time' to getchr
+# Version:    2.4.7: Fixed getchr timeout, added panel function 'ask'
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
