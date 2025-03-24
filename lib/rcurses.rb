@@ -9,6 +9,7 @@
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
+require 'timeout'
 
 require_relative 'string_extensions'
 require_relative 'rcurses/cursor'

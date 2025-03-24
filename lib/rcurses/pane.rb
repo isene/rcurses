@@ -36,6 +36,12 @@ module Rcurses
       @prompt = prompt
       @text   = text
       editline
+      @text
+    end
+
+    def puts(text)
+      @text = text
+      refresh
     end
 
     def refresh(cont = @text)

@@ -1,21 +1,23 @@
 module Rcurses
   module Input
     def getchr(t = nil)
-      # Wait for input up to t seconds; if none, return nil (or a timeout indicator)
-      if t && !IO.select([$stdin], nil, nil, t)
+      begin
+        # If a timeout is provided, wrap the blocking getch call in Timeout.timeout.
+        c = t ? Timeout.timeout(t) { $stdin.getch } : $stdin.getch
+      rescue Timeout::Error
         return nil
       end
 
-      c = $stdin.getch
+      # Process the character (including escape sequences)
       case c
-      when "\e"
-        # For escape sequences, use a very short timeout to check for extra bytes
+      when "\e"    # ANSI escape sequences
+        # Check quickly for any following bytes
         unless IO.select([$stdin], nil, nil, 0.001)
           return "ESC"
         end
         second_char = $stdin.getc
         case second_char
-        when '['
+        when '['   # CSI
           third_char = $stdin.getc
           case third_char
           when 'A' then chr = "UP"
@@ -44,20 +46,20 @@ module Rcurses
           else
             chr = ""
           end
-        when 'O'
+        when 'O'   # Function keys
           third_char = $stdin.getc
           case third_char
           when 'a' then chr = "C-UP"
           when 'b' then chr = "C-DOWN"
           when 'c' then chr = "C-RIGHT"
           when 'd' then chr = "C-LEFT"
-          else
-            chr = ""
+          else chr = ""
           end
         else
           chr = ""
         end
-      when "\r" then chr = "ENTER"
+      # Treat both "\r" and "\n" as Enter
+      when "\r", "\n" then chr = "ENTER"
       when "\t" then chr = "TAB"
       when "\u007F", "\b" then chr = "BACK"
       when "\u0001" then chr = "C-A"
@@ -68,7 +70,6 @@ module Rcurses
       when "\u0006" then chr = "C-F"
       when "\u0007" then chr = "C-G"
       when "\u0008" then chr = "C-H"
-      when "\u000A" then chr = "C-J"
       when "\u000B" then chr = "C-K"
       when "\u000C" then chr = "C-L"
       when "\u000D" then chr = "C-M"
@@ -88,7 +89,9 @@ module Rcurses
       when /[[:print:]]/ then chr = c
       else chr = ""
       end
+
       chr
     end
   end
 end
+
