@@ -47,7 +47,17 @@ module Rcurses
 
     def pagedown
       @ix = @ix + @h - 1
-      @ix = @text.length - 1 if @ix > @text.length - 1
+      @ix = @text.split("\n").length - @h if @ix > @text.split("\n").length - @h
+      refresh
+    end
+
+    def top
+      @ix = 0
+      refresh
+    end
+
+    def bottom
+      @ix = @text.split("\n").length - @h
       refresh
     end
 

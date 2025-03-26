@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name          = 'rcurses'
-  s.version       = '2.6.1'
+  s.version       = '2.7'
   s.licenses      = ['Unlicense']
   s.summary       = "rcurses - An alternative curses library written in pure Ruby"
-  s.description   = "Create curses applications for the terminal easier than ever. Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. New in 2.6: Added methods 'pagedown' and 'pageup' to panes enabling text scrolling. 2.6.1: Resetting index 'ix' to 0 on pane methods 'puts' and 'editline'."
+  s.description   = "Create curses applications for the terminal easier than ever. Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. New in 2.7: Added pane methods 'top' and 'bottom' for text scrolling in pane."
   s.authors       = ["Geir Isene"]
   s.email         = 'g@isene.com'
   s.homepage      = 'https://isene.com/'
