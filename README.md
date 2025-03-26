@@ -81,6 +81,8 @@ edit           | An editor for the Pane. When this is invoked, all existing font
 editline       | Used for one-line Panes. It will print the content of the property `prompt` and then the property `text` that can then be edited by the user. Hitting `ESC` will disregard the edits, while `ENTER` will save the edited text
 puts(text)     | Short form for setting panel.text, then doing a refresh of that panel
 ask(prompt,text) | Short form of setting panel.prompt, then panel.text, doing a panel.editline and then returning panel.text
+pagedown       | Go down one page height in the text (minus one line), but not longer than the length of the text
+pageup         | Go up one page height in the text (minus one line)
 
 # class String extensions
 Method extensions provided for the class String:

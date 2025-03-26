@@ -38,6 +38,18 @@ module Rcurses
       refresh
     end
 
+    def pageup
+      @ix = @ix - @h + 1
+      @ix = 0 if @ix < 0
+      refresh
+    end
+
+    def pagedown
+      @ix = @ix + @h - 1
+      @ix = @text.length - 1 if @ix > @text.length - 1
+      refresh
+    end
+
     def refresh(cont = @text)
       @max_h, @max_w = IO.console.winsize
 
