@@ -35,6 +35,7 @@ module Rcurses
 
     def puts(text)
       @text = text
+      @ix   = 0
       refresh
     end
 
@@ -423,6 +424,7 @@ module Rcurses
         @y = [[@y, 1].max, @max_h - @h + 1].min
 
         @scroll = false
+        @ix     = 0
         row(@y)
 
         fmt = [@fg, @bg].compact.join(',')
