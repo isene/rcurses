@@ -3,20 +3,14 @@ module Rcurses
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
     include Input
-    attr_accessor :startx, :starty, :width, :height, :fg, :bg
-    attr_accessor :x, :y, :w, :h
+    attr_accessor :x, :y, :w, :h, :fg, :bg
     attr_accessor :border, :scroll, :text, :ix, :align, :prompt
 
-    def initialize(startx = 1, starty = 1, width = 1, height = 1, fg = nil, bg = nil)
-      # Using Procs or Lambdas instead of eval
-      @startx  = startx.is_a?(Proc) ? startx : -> { startx }
-      @starty  = starty.is_a?(Proc) ? starty : -> { starty }
-      @width   = width.is_a?(Proc)  ? width  : -> { width  }
-      @height  = height.is_a?(Proc) ? height : -> { height }
-      @x       = @startx.call
-      @y       = @starty.call
-      @w       = @width.call
-      @h       = @height.call
+    def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
+      @x       = x
+      @y       = y
+      @w       = w
+      @h       = h
       @fg, @bg = fg, bg
       @text    = ""              # Initialize text variable
       @align   = "l"             # Default alignment
@@ -27,8 +21,8 @@ module Rcurses
     end
 
     def move(x, y)
-      @startx = -> { @x + x }
-      @starty = -> { @y + y }
+      @x += x
+      @y += y
       refresh
     end
 
@@ -143,10 +137,6 @@ module Rcurses
 
       # Start the actual refresh
       o_row, o_col = pos
-      @x = @startx.call
-      @y = @starty.call
-      @w = @width.call
-      @h = @height.call
 
       # Adjust pane dimensions and positions
       if @border # Keep panes inside screen
@@ -416,10 +406,6 @@ module Rcurses
         Rcurses::Cursor.show
 
         # Initialize position and dimensions
-        @x = @startx.call
-        @y = @starty.call
-        @w = @width.call
-        @h = @height.call
         # Ensure pane is within screen bounds
         @x = [[@x, 1].max, @max_w - @w + 1].min
         @y = [[@y, 1].max, @max_h - @h + 1].min

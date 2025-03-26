@@ -43,11 +43,9 @@ This will create a pane/box starting at terminal column/x 80 and row/y 30 with t
 
 The format for creating a pane is:
 ```
-Rcurses::Pane.new(startx, starty, width, height, foregroundcolor, backgroundcolor)
+Rcurses::Pane.new(x, y, w, h, fg, bg)
 ```
 You can drop the last two 256-color codes to create a pane with the defaults for your terminal. 
-
-You can add anything as `startx`, `starty`, `width` or `height` as those values will be evaluated and stored in readable variables `x`, `y`, `w` and `h` respectively. 
 
 By adding values for the terminal size in your program:
 ```
@@ -59,14 +57,10 @@ Avaliable properties/variables:
 
 Property       | Description
 ---------------|---------------------------------------------------------------
-startx         | The `x` value to be "Eval-ed"
-x              | The readable x-value for the Pane
-starty         | The `y` value to be "Eval-ed"
-y              | The readable y-value for the Pane
-width          | The Pane width to be "Eval-ed"
-w              | The readable w-value for the Pane
-height         | The Pane height to be "Eval-ed"
-h              | The readable h-value for the Pane
+x              | The x (column) position of the Pane
+y              | The y (row) position of the Pane
+w              | The width of the Pane
+h              | The heigth of the Pane
 fg             | Foreground color for the Pane
 bg             | Background color for the Pane
 border         | Draw border around the Pane (=true) or not (=false), default being false
@@ -80,7 +74,7 @@ The methods for Pane:
 
 Method         | Description
 ---------------|---------------------------------------------------------------
-new/init       | Initializes a Pane with optional arguments startx, starty, width, height, foregroundcolor and backgroundcolor
+new/init       | Initializes a Pane with optional arguments `x, y, w, h, fg and bg`
 move(x,y)      | Move the pane by `x`and `y` (`mypane.move(-4,5)` will move the pane left four characters and five characters down)
 refresh        | Refreshes/redraws the Pane with content
 edit           | An editor for the Pane. When this is invoked, all existing font dressing is stripped and the user gets to edit the raw text. The user can add font effects similar to Markdown; Use an asterisk before and after text to be drawn in bold, text between forward-slashes become italic, and underline before and after text means the text will be underlined, a hash-sign before and after text makes the text reverse colored. You can also combine a whole set of dressings in this format: `<23,245,biurl|Hello World!>` - this will make "Hello World!" print in the color 23 with the background color 245 (regardless of the Pane's fg/bg setting) in bold, italic, underlined, reversed colored and blinking. Hitting `ESC` while in edit mode will disregard the edits, while `Ctrl-S` will save the edits
@@ -215,7 +209,7 @@ Try this in `irb`:
 ```
 require 'rcurses'
 @max_h, @max_w = IO.console.winsize
-mypane = Pane.new(@maxw/2, 30, 30, 10, 19, 229)
+mypane = Pane.new(@max_w/2, 30, 30, 10, 19, 229)
 mypane.border = true
 mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
 mypane.refresh
