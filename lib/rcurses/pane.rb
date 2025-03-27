@@ -39,8 +39,14 @@ module Rcurses
       refresh
     end
 
-    def pageup
-      @ix = @ix - @h + 1
+    def linedown
+      @ix += 1
+      @ix = @text.split("\n").length if @ix > @text.split("\n").length - 1
+      refresh
+    end
+
+    def lineup
+      @ix -= 1
       @ix = 0 if @ix < 0
       refresh
     end
@@ -51,13 +57,19 @@ module Rcurses
       refresh
     end
 
-    def top
-      @ix = 0
+    def pageup
+      @ix = @ix - @h + 1
+      @ix = 0 if @ix < 0
       refresh
     end
 
     def bottom
       @ix = @text.split("\n").length - @h
+      refresh
+    end
+
+    def top
+      @ix = 0
       refresh
     end
 

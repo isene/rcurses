@@ -83,6 +83,8 @@ puts(text)     | Short form for setting panel.text, then doing a refresh of that
 ask(prompt,text) | Short form of setting panel.prompt, then panel.text, doing a panel.editline and then returning panel.text
 pagedown       | Scroll down one page height in the text (minus one line), but not longer than the length of the text
 pageup         | Scroll up one page height in the text (minus one line)
+linedown       | Scroll down one line in the text
+lineup         | Scroll up one line in the text
 bottom         | Scroll to the bottom of the text in the pane
 top            | Scroll to the top of the text in the pane
 
@@ -166,6 +168,7 @@ Key pressed     | string returned
 `end`           | "END"   
 `ctrl-end`      | "C-END"
 `backspace`     | "BACK"
+`ctrl- `        | "C-SPACE"
 `ctrl-h`        | "BACK"
 `ctrl-a`        | "C-A"
 `ctrl-b`        | "C-B"
@@ -194,6 +197,7 @@ Key pressed     | string returned
 `ctrl-z`        | "C-Z"
 `enter`         | "ENTER"
 `tab`           | "TAB"
+`F1` - `F12`    | "F1" - "F12"
 
 Any other character enter will be returned (to `chr` in the example above).
 

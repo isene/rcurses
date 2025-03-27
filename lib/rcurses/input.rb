@@ -25,24 +25,83 @@ module Rcurses
           when 'C' then chr = "RIGHT"
           when 'D' then chr = "LEFT"
           when 'Z' then chr = "S-TAB"
+          when '1'
+            fourth_char = $stdin.getc
+            case fourth_char
+            when '1'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F1" : ""
+            when '2'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F2" : ""
+            when '3'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F3" : ""
+            when '4'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F4" : ""
+            when '5'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F5" : ""
+            when '7'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F6" : ""
+            when '8'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F7" : ""
+            when '9'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F8" : ""
+            end
           when '2'
             fourth_char = $stdin.getc
-            chr = fourth_char == '~' ? "INS" : ""
+            case fourth_char
+            when '~' then chr = "INS"
+            when '0'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F9" : ""
+            when '1'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F10" : ""
+            when '3'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F11" : ""
+            when '4'
+              fifth_char = $stdin.getc
+              chr = fifth_char == '~' ? "F12" : ""
+            else chr = ""
+            end
           when '3'
             fourth_char = $stdin.getc
             chr = fourth_char == '~' ? "DEL" : ""
           when '5'
             fourth_char = $stdin.getc
-            chr = fourth_char == '~' ? "PgUP" : ""
+            case fourth_char
+            when '~' then chr = "PgUP"
+            when '^' then chr = "C-PgUP"
+            else chr = ""
+            end
           when '6'
             fourth_char = $stdin.getc
-            chr = fourth_char == '~' ? "PgDOWN" : ""
+            case fourth_char
+            when '~' then chr = "PgDOWN"
+            when '^' then chr = "C-PgDOWN"
+            else chr = ""
+            end
           when '1', '7'
             fourth_char = $stdin.getc
-            chr = fourth_char == '~' ? "HOME" : ""
+            case fourth_char
+            when '~' then chr = "HOME"
+            when '^' then chr = "C-HOME"
+            else chr = ""
+            end
           when '4', '8'
             fourth_char = $stdin.getc
-            chr = fourth_char == '~' ? "END" : ""
+            case fourth_char
+            when '~' then chr = "END"
+            when '^' then chr = "C-END"
+            else chr = ""
+            end
           else
             chr = ""
           end
@@ -62,6 +121,7 @@ module Rcurses
       when "\r", "\n" then chr = "ENTER"
       when "\t" then chr = "TAB"
       when "\u007F", "\b" then chr = "BACK"
+      when "\u0000" then chr = "C-SPACE"
       when "\u0001" then chr = "C-A"
       when "\u0002" then chr = "C-B"
       when "\u0003" then chr = "C-C"
@@ -85,7 +145,7 @@ module Rcurses
       when "\u0018" then chr = "C-X"
       when "\u0019" then chr = "C-Y"
       when "\u001A" then chr = "C-Z"
-      when "\u0017" then chr = "WBACK"
+      when "\u0017" then chr = "WBACK" # C-W
       when /[[:print:]]/ then chr = c
       else chr = ""
       end
@@ -94,4 +154,3 @@ module Rcurses
     end
   end
 end
-
