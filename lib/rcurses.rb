@@ -5,13 +5,14 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    2.4.7: Fixed getchr timeout, added panel function 'ask'
+# Version:    2.9: Added Rcurses.clear_screen
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
 require 'timeout'
 
 require_relative 'string_extensions'
+require_relative 'rcurses/general'
 require_relative 'rcurses/cursor'
 require_relative 'rcurses/input'
 require_relative 'rcurses/pane'

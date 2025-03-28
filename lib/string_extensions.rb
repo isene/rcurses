@@ -11,6 +11,9 @@ class String
 
   # Internal function
   def color(text, sp, ep = "\e[0m")
+    # Replace every newline with a newline followed by the start sequence,
+    # so that formatting is reestablished on each new line.
+    text = text.gsub("\n", "#{ep}\n#{sp}")
     "#{sp}#{text}#{ep}"
   end
 

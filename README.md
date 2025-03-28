@@ -108,6 +108,9 @@ inject("chars",pos) | Inject "chars" at position 'pos' in the pure version of th
 
 PS: Blink does not work in conjunction with setting a background color in urxvt. It does work in gnome-terminal. But the overall performance in urxvt as orders of magnitude better than gnome-terminal.
 
+# Cleaning up upon exit
+End a program with `Rcurses.clear_screen` to clear the screen for any rcurses residues.
+
 # module Cursor
 To use this module, first do `include Rcurses::Cursor`. Create a new cursor object with `mycursor = Rcurses::Cursor`. Then you can apply the following methods to `mycursor`:
 
