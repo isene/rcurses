@@ -1,7 +1,7 @@
 # rcurses - An alternative curses library written in pure Ruby
 
 ![Ruby](https://img.shields.io/badge/language-Ruby-red) [![Gem Version](https://badge.fury.io/rb/rcurses.svg)](https://badge.fury.io/rb/rcurses) ![Unlicense](https://img.shields.io/badge/license-Unlicense-green) ![Stay Amazing](https://img.shields.io/badge/Stay-Amazing-important)
-
+ 
 <img src="img/rcurses-logo.png" width="150" height="150">
 
 Create curses applications for the terminal easier than ever.
