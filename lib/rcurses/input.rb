@@ -21,9 +21,13 @@ module Rcurses
           third_char = $stdin.getc
           case third_char
           when 'A' then chr = "UP"
+          when 'a' then chr = "S-UP"
           when 'B' then chr = "DOWN"
+          when 'b' then chr = "S-DOWN"
           when 'C' then chr = "RIGHT"
+          when 'c' then chr = "S-RIGHT"
           when 'D' then chr = "LEFT"
+          when 'd' then chr = "S-LEFT"
           when 'Z' then chr = "S-TAB"
           when '1'
             fourth_char = $stdin.getc

@@ -5,6 +5,7 @@ module Rcurses
     include Input
     attr_accessor :x, :y, :w, :h, :fg, :bg
     attr_accessor :border, :scroll, :text, :ix, :align, :prompt
+    attr_accessor :moreup, :moredown
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
       @x       = x
@@ -216,12 +217,18 @@ module Rcurses
 
       if @ix > 0 and @scroll # Print "more" marker at top
         col(@x + @w - 1); row(@y)
-        print "▲".c(fmt)
+        print "∆".c(fmt)
+        @moreup = true
+      else
+        @moreup = false
       end
 
       if @txt.length - @ix > @h and @scroll # Print bottom "more" marker
         col(@x + @w - 1); row(@y + @h - 1)
-        print "▼".c(fmt)
+        print "∇".c(fmt)
+        @moredown = true
+      else
+        @moredown = false
       end
 
       if @border # Print border if @border is set to true

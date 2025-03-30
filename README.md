@@ -69,6 +69,8 @@ text           | The text/content of the Pane
 ix             | "Index" - the line number at the top of the Pane, starts at 0, the first line of text in the Pane
 align          | Text alignment in the Pane: "l" = lefts aligned, "c" = center, "r" = right, with the default "l"
 prompt         | The prompt to print at the beginning of a one-liner Pane used as an input box
+moreup         | Set to true when there is more text above what is shown (top scroll bar i showing)
+moredown       | Set to true when there is more text below what is shown (bottom scroll bar i showing)
 
 The methods for Pane:
 
@@ -150,12 +152,16 @@ Key pressed     | string returned
 ----------------|----------------------------------------------------------
 `esc`           | "ESC"
 `up`            | "UP"
+`shift-up`      | "S-UP"
 `ctrl-up`       | "C-UP"
 `down`          | "DOWN"
+`shift-down`    | "S-DOWN"
 `ctrl-down`     | "C-DOWN"
 `right`         | "RIGHT"
+`shift-right`   | "S-RIGHT"
 `ctrl-right`    | "C-RIGHT"
 `left`          | "LEFT"
+`shifth-left`   | "S-LEFT"
 `ctrl-left`     | "C-LEFT"
 `shift-tab`     | "S-TAB"
 `insert`        | "INS"   
