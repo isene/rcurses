@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    2.10: Added key captures for S-UP, S-DOWN, S-LEFT and S-RIGHT. added pane properties 'moreup' and 'moredown'
+# Version:    3.0: Flicker reduction by double screen buffer
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

@@ -15,9 +15,9 @@ module Rcurses
       @fg, @bg = fg, bg
       @text    = ""              # Initialize text variable
       @align   = "l"             # Default alignment
-      @scroll  = true            # Initialize scroll indicators to true
-      @prompt  = ""              # Initialize prompt for editline
-      @ix      = 0               # Text index (starting text line in pane)
+      @scroll  = true            # Enable scroll indicators
+      @prompt  = ""              # Prompt for editline
+      @ix      = 0               # Starting text line index
       @max_h, @max_w = IO.console.winsize
     end
 
@@ -74,108 +74,12 @@ module Rcurses
       refresh
     end
 
+    # Optimized refresh using double buffering to minimize flicker.
     def refresh(cont = @text)
       @max_h, @max_w = IO.console.winsize
 
-      # Define the core of the ANSI escape sequence handling
-      def split_line_with_ansi(line, w)
-        # Define opening and closing sequences
-        open_sequences = {
-          "\e[1m" => "\e[22m",
-          "\e[3m" => "\e[23m",
-          "\e[4m" => "\e[24m",
-          "\e[5m" => "\e[25m",
-          "\e[7m" => "\e[27m" }
-        # All known closing sequences
-        close_sequences = open_sequences.values + ["\e[0m"]
-        # Regex to match ANSI escape sequences
-        ansi_regex = /\e\[[0-9;]*m/
-        result = []
-        # Tokenize the line into ANSI sequences and plain text
-        tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
-        current_line = ''
-        current_line_length = 0
-        active_sequences = []
-        tokens.each do |token|
-          if token.match?(ansi_regex)
-            # It's an ANSI sequence
-            current_line << token
-            if close_sequences.include?(token)
-              # It's a closing sequence
-              if token == "\e[0m"
-                # Reset all sequences
-                active_sequences.clear
-              else
-                # Remove the corresponding opening sequence
-                corresponding_open = open_sequences.key(token)
-                active_sequences.delete(corresponding_open)
-              end
-            else
-              # It's an opening sequence (or any other ANSI sequence)
-              active_sequences << token
-            end
-          else
-            # It's plain text, split into words and spaces
-            words = token.scan(/\S+\s*/)
-            words.each do |word|
-              word_length = word.gsub(ansi_regex, '').length
-              if current_line_length + word_length <= w
-                # Append word to current line
-                current_line << word
-                current_line_length += word_length
-              else
-                # Word doesn't fit in the current line
-                if current_line_length > 0
-                  # Finish the current line and start a new one
-                  result << current_line
-                  # Start new line with active ANSI sequences
-                  current_line = active_sequences.join
-                  current_line_length = 0
-                end
-                # Handle long words that might need splitting
-                while word_length > w
-                  # Split the word
-                  part = word[0, w]
-                  current_line << part
-                  result << current_line
-                  # Update word and lengths
-                  word = word[w..-1]
-                  word_length = word.gsub(ansi_regex, '').length
-                  # Start new line
-                  current_line = active_sequences.join
-                  current_line_length = 0
-                end
-                # Append any remaining part of the word
-                if word_length > 0
-                  current_line << word
-                  current_line_length += word_length
-                end
-              end
-            end
-          end
-        end
-        # Append any remaining text in the current line
-        result << current_line unless current_line.empty?
-        result
-      end
-
-      # Define the main textformat function
-      def textformat(cont)
-        # Split the content by '\n'
-        lines = cont.split("\n")
-        result = []
-        lines.each do |line|
-          split_lines = split_line_with_ansi(line, @w)
-          result.concat(split_lines)
-        end
-        result
-      end
-
-      # Start the actual refresh
-      o_row, o_col = pos
-
-      # Adjust pane dimensions and positions
-      if @border # Keep panes inside screen
+      # Adjust pane dimensions (unchanged logic)
+      if @border
         @w = @max_w - 2 if @w > @max_w - 2
         @h = @max_h - 2 if @h > @max_h - 2
         @x = 2 if @x < 2; @x = @max_w - @w if @x + @w > @max_w
@@ -187,75 +91,81 @@ module Rcurses
         @y = 1 if @y < 1; @y = @max_h - @h + 1 if @y + @h > @max_h + 1
       end
 
-      col(@x); row(@y) # Cursor to start of pane
-      fmt = [@fg, @bg].compact.join(',') # Format for printing in pane (fg,bg)
-      @txt = cont.split("\n") # Split content into array
-      @txt = textformat(cont) if @txt.any? { |line| line.pure.length >= @w } # Reformat lines if necessary
-      @ix = @txt.length - 1 if @ix > @txt.length - 1; @ix = 0 if @ix < 0 # Ensure no out-of-bounds
+      # Save current cursor position.
+      o_row, o_col = pos
 
-      @h.times do |i| # Print pane content
-        l = @ix + i # The current line to be printed
-        if @txt[l].to_s != "" # Print the text line
-          # Get padding width and half width
+      # Hide cursor and switch to alternate screen buffer (if desired). Hide it any case and use Curses.show to bring it back.
+      # Note: The alternate screen buffer means your program’s output won’t mix with the normal terminal content.
+      STDOUT.print "\e[?25l"  # hide cursor
+      # Uncomment the next line to use the alternate screen buffer.
+      #STDOUT.print "\e[?1049h"
+
+      buf = ""
+      buf << "\e[#{@y};#{@x}H"  # Move cursor to start of pane.
+      fmt = [@fg, @bg].compact.join(',')
+      @txt = cont.split("\n")
+      @txt = textformat(cont) if @txt.any? { |line| line.pure.length >= @w }
+      @ix = @txt.length - 1 if @ix > @txt.length - 1
+      @ix = 0 if @ix < 0
+
+      @h.times do |i|
+        l = @ix + i
+        if @txt[l].to_s != ""
           pl = @w - @txt[l].pure.length
           pl = 0 if pl < 0
           hl = pl / 2
           case @align
           when "l"
-            print @txt[l].c(fmt) + " ".c(fmt) * pl
+            buf << @txt[l].c(fmt) << " ".c(fmt) * pl
           when "r"
-            print " ".c(fmt) * pl + @txt[l].c(fmt)
+            buf << " ".c(fmt) * pl << @txt[l].c(fmt)
           when "c"
-            print " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
+            buf << " ".c(fmt) * hl << @txt[l].c(fmt) << " ".c(fmt) * (pl - hl)
           end
         else
-          print " ".c(fmt) * @w
+          buf << " ".c(fmt) * @w
         end
-        col(@x) # Cursor to start of pane
-        row(@y + i + 1)
+        buf << "\e[#{@y + i + 1};#{@x}H"  # Next line.
       end
 
-      if @ix > 0 and @scroll # Print "more" marker at top
-        col(@x + @w - 1); row(@y)
-        print "∆".c(fmt)
+      # Draw scroll markers.
+      if @ix > 0 and @scroll
+        buf << "\e[#{@y};#{@x + @w - 1}H" << "∆".c(fmt)
         @moreup = true
       else
         @moreup = false
       end
 
-      if @txt.length - @ix > @h and @scroll # Print bottom "more" marker
-        col(@x + @w - 1); row(@y + @h - 1)
-        print "∇".c(fmt)
+      if @txt.length - @ix > @h and @scroll
+        buf << "\e[#{@y + @h - 1};#{@x + @w - 1}H" << "∇".c(fmt)
         @moredown = true
       else
         @moredown = false
       end
 
-      if @border # Print border if @border is set to true
-        row(@y - 1); col(@x - 1)
-        print ("┌" + "─" * @w + "┐").c(fmt)
+      # Draw border if enabled.
+      if @border
+        buf << "\e[#{@y - 1};#{@x - 1}H" << ("┌" + "─" * @w + "┐").c(fmt)
         @h.times do |i|
-          row(@y + i); col(@x - 1)
-          print "│".c(fmt)
-          col(@x + @w)
-          print "│".c(fmt)
+          buf << "\e[#{@y + i};#{@x - 1}H" << "│".c(fmt)
+          buf << "\e[#{@y + i};#{@x + @w}H" << "│".c(fmt)
         end
-        row(@y + @h); col(@x - 1)
-        print ("└" + "─" * @w + "┘").c(fmt)
+        buf << "\e[#{@y + @h};#{@x - 1}H" << ("└" + "─" * @w + "┘").c(fmt)
       end
 
-      row(o_row)
-      col(o_col)
+      # Restore original cursor position.
+      buf << "\e[#{o_row};#{o_col}H"
+
+      # Print the whole buffer at once.
+      print buf
+
+      # Uncomment the next line to switched to the alternate screen buffer.
+      #STDOUT.print "\e[?1049l"
+
       @txt
     end
 
-    def puts(txt)
-      @text = txt
-      refresh
-    end
-    
     def textformat(cont)
-      # Split the content by '\n'
       lines = cont.split("\n")
       result = []
       lines.each do |line|
@@ -263,6 +173,11 @@ module Rcurses
         result.concat(split_lines)
       end
       result
+    end
+
+    def puts(txt)
+      @text = txt
+      refresh
     end
 
     def right
@@ -286,6 +201,7 @@ module Rcurses
         end
       end
     end
+
     def left
       if @pos == 0
         if @line == 0
@@ -301,6 +217,7 @@ module Rcurses
         @pos -= 1
       end
     end
+
     def up
       if @line == 0
         @ix -= 1 unless @ix == 0
@@ -312,6 +229,7 @@ module Rcurses
       rescue
       end
     end
+
     def down
       if @line == @h - 1
         @ix += 1 unless @ix + @line >= @txt.length - 1
@@ -325,10 +243,10 @@ module Rcurses
     end
 
     def parse(cont)
-      cont.gsub!(/\*(.+?)\*/,           '\1'.b)
-      cont.gsub!(/\/(.+?)\//,           '\1'.i)
-      cont.gsub!(/_(.+?)_/,             '\1'.u)
-      cont.gsub!(/#(.+?)#/,             '\1'.r)
+      cont.gsub!(/\*(.+?)\*/, '\1'.b)
+      cont.gsub!(/\/(.+?)\//, '\1'.i)
+      cont.gsub!(/_(.+?)_/, '\1'.u)
+      cont.gsub!(/#(.+?)#/, '\1'.r)
       cont.gsub!(/<([^|]+)\|([^>]+)>/) do
         text = $2; codes = $1
         text.c(codes)
@@ -338,92 +256,85 @@ module Rcurses
 
     def edit
       begin
-        # Switch to raw mode without echoing input
         STDIN.raw!
         Rcurses::Cursor.show
-        # Prepare content for editing, replacing newlines with a placeholder
         content = @text.pure.gsub("\n", "¬\n")
-        # Initialize cursor position and indices
-        @ix        = 0   # Starting index of text lines displayed in the pane
-        @line      = 0   # Current line number relative to the pane's visible area
-        @pos       = 0   # Position within the current line (character index)
-        @txt       = refresh(content)
+        @ix    = 0
+        @line  = 0
+        @pos   = 0
+        @txt   = refresh(content)
         input_char = ''
 
-        while input_char != 'ESC'  # Continue until ESC is pressed
-          row(@y + @line)          # Move cursor to the correct row
-          col(@x + @pos)           # Move cursor to the correct column
-
-          input_char = getchr      # Read user input
+        while input_char != 'ESC'
+          row(@y + @line)
+          col(@x + @pos)
+          input_char = getchr
           case input_char
-          when 'C-L'    # Left justify
+          when 'C-L'
             @align = 'l'
-          when 'C-R'    # Right justify
+          when 'C-R'
             @align = 'r'
-          when 'C-C'    # Center justify
+          when 'C-C'
             @align = 'c'
-          when 'C-Y'    # Copy pane content to clipboard
+          when 'C-Y'
             Clipboard.copy(@text.pure)
-          when 'C-S'    # Save edited text back to @text and exit
+          when 'C-S'
             content = content.gsub('¬', "\n")
             content = parse(content)
             @text = content
             input_char = 'ESC'
-          when 'DEL'    # Delete character at current position
+          when 'DEL'
             posx = calculate_posx
             content.slice!(posx)
-          when 'BACK'   # Backspace (delete character before current position)
+          when 'BACK'
             if @pos > 0
               left
               posx = calculate_posx
               content.slice!(posx)
             end
-          when 'WBACK'  # Word backspace
+          when 'WBACK'
             while @pos > 0 && content[calculate_posx - 1] != ' '
               left
               posx = calculate_posx
               content.slice!(posx)
             end
-          when 'C-K'    # Kill line (delete from cursor to end of line)
+          when 'C-K'
             line_start_pos = calculate_line_start_pos
             line_length = @txt[@ix + @line]&.length || 0
             content.slice!(line_start_pos + @pos, line_length - @pos)
-          when 'UP'     # Move cursor up one line
+          when 'UP'
             up
-          when 'DOWN'   # Move cursor down one line
+          when 'DOWN'
             down
-          when 'RIGHT'  # Move cursor right one character
+          when 'RIGHT'
             right
-          when 'LEFT'   # Move cursor left one character
+          when 'LEFT'
             left
-          when 'HOME'   # Move to start of line
+          when 'HOME'
             @pos = 0
-          when 'END'    # Move to end of line
+          when 'END'
             current_line_length = @txt[@ix + @line]&.length || 0
             @pos = current_line_length
-          when 'C-HOME' # Move to start of pane
+          when 'C-HOME'
             @ix = 0
             @line = 0
             @pos = 0
-          when 'C-END'  # Move to end of pane
+          when 'C-END'
             total_lines = @txt.length
             @ix = [total_lines - @h, 0].max
             @line = [@h - 1, total_lines - @ix - 1].min
             current_line_length = @txt[@ix + @line]&.length || 0
             @pos = current_line_length
-          when 'ENTER'  # Insert newline at current position
+          when 'ENTER'
             posx = calculate_posx
             content.insert(posx, "¬\n")
             right
-          when /^.$/    # Insert character at current position
+          when /^.$/
             posx = calculate_posx
             content.insert(posx, input_char)
             right
-          else
-            # Handle unrecognized input if necessary
           end
 
-          # Handle pasted input (additional characters in the buffer)
           while IO.select([$stdin], nil, nil, 0)
             input_char = $stdin.read_nonblock(1) rescue nil
             break unless input_char
@@ -432,10 +343,9 @@ module Rcurses
             right
           end
 
-          @txt = refresh(content)  # Refresh the pane with the current content
+          @txt = refresh(content)
         end
       ensure
-        # Restore terminal mode
         STDIN.cooked!
       end
       Rcurses::Cursor.hide
@@ -443,36 +353,28 @@ module Rcurses
 
     def editline
       begin
-        # Switch to raw mode without echo
         STDIN.raw!
         Rcurses::Cursor.show
-
-        # Initialize position and dimensions
-        # Ensure pane is within screen bounds
         @x = [[@x, 1].max, @max_w - @w + 1].min
         @y = [[@y, 1].max, @max_h - @h + 1].min
-
         @scroll = false
-        @ix     = 0
+        @ix = 0
         row(@y)
-
         fmt = [@fg, @bg].compact.join(',')
         col(@x)
-        print @prompt.c(fmt)  # Print prompt at the pane's starting position
-
+        print @prompt.c(fmt)
         prompt_len = @prompt.pure.length
         content_len = @w - prompt_len
         cont = @text.pure.slice(0, content_len)
-        @pos = cont.length  # Set initial cursor position at the end of content
+        @pos = cont.length
         chr = ''
 
-        while chr != 'ESC'  # Continue until ESC is pressed
-          col(@x + prompt_len)  # Set cursor at start of content
-          cont = cont.slice(0, content_len)  # Trim content to max length
-          print cont.ljust(content_len).c(fmt)  # Print content, left-justified
-          col(@x + prompt_len + @pos)  # Set cursor to current position
-
-          chr = getchr  # Read user input
+        while chr != 'ESC'
+          col(@x + prompt_len)
+          cont = cont.slice(0, content_len)
+          print cont.ljust(content_len).c(fmt)
+          col(@x + prompt_len + @pos)
+          chr = getchr
           case chr
           when 'LEFT'
             @pos -= 1 if @pos > 0
@@ -507,7 +409,6 @@ module Rcurses
             end
           end
 
-          # Handle pasted input
           while IO.select([$stdin], nil, nil, 0)
             chr = $stdin.read_nonblock(1) rescue nil
             break unless chr
@@ -518,7 +419,6 @@ module Rcurses
           end
         end
       ensure
-        # Restore terminal mode
         STDIN.cooked!
       end
       Rcurses::Cursor.hide
@@ -526,22 +426,93 @@ module Rcurses
 
     private
 
-    # Calculates the position in the content string corresponding to the current cursor position
+    def flush_stdin
+      while IO.select([$stdin], nil, nil, 0.005)
+        begin
+          $stdin.read_nonblock(1024)
+        rescue IO::WaitReadable, EOFError
+          break
+        end
+      end
+    end
+
     def calculate_posx
       total_length = 0
       (@ix + @line).times do |i|
-        total_length += @txt[i].pure.length + 1  # +1 for the newline character
+        total_length += @txt[i].pure.length + 1  # +1 for the newline
       end
       total_length += @pos
       total_length
     end
-    # Calculates the starting position of the current line in the content string
+
     def calculate_line_start_pos
       total_length = 0
       (@ix + @line).times do |i|
-        total_length += @txt[i].pure.length + 1  # +1 for the newline character
+        total_length += @txt[i].pure.length + 1
       end
       total_length
+    end
+
+    def split_line_with_ansi(line, w)
+      open_sequences = {
+        "\e[1m" => "\e[22m",
+        "\e[3m" => "\e[23m",
+        "\e[4m" => "\e[24m",
+        "\e[5m" => "\e[25m",
+        "\e[7m" => "\e[27m"
+      }
+      close_sequences = open_sequences.values + ["\e[0m"]
+      ansi_regex = /\e\[[0-9;]*m/
+      result = []
+      tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
+      current_line = ''
+      current_line_length = 0
+      active_sequences = []
+      tokens.each do |token|
+        if token.match?(ansi_regex)
+          current_line << token
+          if close_sequences.include?(token)
+            if token == "\e[0m"
+              active_sequences.clear
+            else
+              corresponding_open = open_sequences.key(token)
+              active_sequences.delete(corresponding_open)
+            end
+          else
+            active_sequences << token
+          end
+        else
+          words = token.scan(/\s+|\S+/)
+          words.each do |word|
+            word_length = word.gsub(ansi_regex, '').length
+            if current_line_length + word_length <= w
+              current_line << word
+              current_line_length += word_length
+            else
+              if current_line_length > 0
+                result << current_line
+                current_line = active_sequences.join
+                current_line_length = 0
+              end
+              while word_length > w
+                part = word[0, w]
+                current_line << part
+                result << current_line
+                word = word[w..-1]
+                word_length = word.gsub(ansi_regex, '').length
+                current_line = active_sequences.join
+                current_line_length = 0
+              end
+              if word_length > 0
+                current_line << word
+                current_line_length += word_length
+              end
+            end
+          end
+        end
+      end
+      result << current_line unless current_line.empty?
+      result
     end
   end
 end
