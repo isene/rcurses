@@ -8,22 +8,25 @@ module Rcurses
     attr_accessor :moreup, :moredown
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
+      @max_h, @max_w = IO.console.winsize
       @x       = x
       @y       = y
       @w       = w
       @h       = h
       @fg, @bg = fg, bg
-      @text    = ""              # Initialize text variable
-      @align   = "l"             # Default alignment
-      @scroll  = true            # Enable scroll indicators
-      @prompt  = ""              # Prompt for editline
-      @ix      = 0               # Starting text line index
-      @max_h, @max_w = IO.console.winsize
+      @text    = ""     # Initialize text variable
+      @align   = "l"    # Default alignment
+      @scroll  = true   # Enable scroll indicators
+      @prompt  = ""     # Prompt for editline
+      @ix      = 0      # Starting text line index
+      @prev_frame = nil # Holds the previously rendered frame (array of lines)
+      @line = 0         # For cursor tracking during editing:
+      @pos  = 0         # For cursor tracking during editing:
     end
 
-    def move(x, y)
-      @x += x
-      @y += y
+    def move(dx, dy)
+      @x += dx
+      @y += dy
       refresh
     end
 
@@ -74,11 +77,13 @@ module Rcurses
       refresh
     end
 
-    # Optimized refresh using double buffering to minimize flicker.
+    # Diff-based refresh that minimizes flicker.
+    # Building a frame (an array of lines) that includes borders (if enabled).
+    # Content lines are wrapped in vertical border characters when @border is true.
     def refresh(cont = @text)
       @max_h, @max_w = IO.console.winsize
 
-      # Adjust pane dimensions (unchanged logic)
+      # Adjust pane dimensions and positions.
       if @border
         @w = @max_w - 2 if @w > @max_w - 2
         @h = @max_h - 2 if @h > @max_h - 2
@@ -94,21 +99,26 @@ module Rcurses
       # Save current cursor position.
       o_row, o_col = pos
 
-      # Hide cursor and switch to alternate screen buffer (if desired). Hide it any case and use Curses.show to bring it back.
-      # Note: The alternate screen buffer means your program’s output won’t mix with the normal terminal content.
-      STDOUT.print "\e[?25l"  # hide cursor
-      # Uncomment the next line to use the alternate screen buffer.
-      #STDOUT.print "\e[?1049h"
+      STDOUT.print "\e[?25l"  # Hide cursor
 
-      buf = ""
-      buf << "\e[#{@y};#{@x}H"  # Move cursor to start of pane.
       fmt = [@fg, @bg].compact.join(',')
       @txt = cont.split("\n")
       @txt = textformat(cont) if @txt.any? { |line| line.pure.length >= @w }
       @ix = @txt.length - 1 if @ix > @txt.length - 1
       @ix = 0 if @ix < 0
 
-      @h.times do |i|
+      # Build the new frame as an array of strings.
+      new_frame = []
+      if @border
+        # Top border spans (@w + 2) characters.
+        top_border = ("┌" + "─" * @w + "┐").c(fmt)
+        new_frame << top_border
+      end
+
+      # Build content lines.
+      content_rows = @h
+      content_rows.times do |i|
+        line_str = ""
         l = @ix + i
         if @txt[l].to_s != ""
           pl = @w - @txt[l].pure.length
@@ -116,53 +126,60 @@ module Rcurses
           hl = pl / 2
           case @align
           when "l"
-            buf << @txt[l].c(fmt) << " ".c(fmt) * pl
+            line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
           when "r"
-            buf << " ".c(fmt) * pl << @txt[l].c(fmt)
+            line_str = " ".c(fmt) * pl + @txt[l].c(fmt)
           when "c"
-            buf << " ".c(fmt) * hl << @txt[l].c(fmt) << " ".c(fmt) * (pl - hl)
+            line_str = " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
           end
         else
-          buf << " ".c(fmt) * @w
+          line_str = " ".c(fmt) * @w
         end
-        buf << "\e[#{@y + i + 1};#{@x}H"  # Next line.
+
+        # If border is enabled, add vertical border characters.
+        if @border
+          line_str = "│" + line_str + "│"
+        end
+
+        # Add scroll markers (overwrite the last character) if needed.
+        if i == 0 and @ix > 0 and @scroll
+          line_str[-1] = "∆".c(fmt)
+          @moreup = true
+        elsif i == content_rows - 1 and @txt.length - @ix > @h and @scroll
+          line_str[-1] = "∇".c(fmt)
+          @moredown = true
+        else
+          @moreup = false
+          @moredown = false
+        end
+        new_frame << line_str
       end
 
-      # Draw scroll markers.
-      if @ix > 0 and @scroll
-        buf << "\e[#{@y};#{@x + @w - 1}H" << "∆".c(fmt)
-        @moreup = true
-      else
-        @moreup = false
-      end
-
-      if @txt.length - @ix > @h and @scroll
-        buf << "\e[#{@y + @h - 1};#{@x + @w - 1}H" << "∇".c(fmt)
-        @moredown = true
-      else
-        @moredown = false
-      end
-
-      # Draw border if enabled.
       if @border
-        buf << "\e[#{@y - 1};#{@x - 1}H" << ("┌" + "─" * @w + "┐").c(fmt)
-        @h.times do |i|
-          buf << "\e[#{@y + i};#{@x - 1}H" << "│".c(fmt)
-          buf << "\e[#{@y + i};#{@x + @w}H" << "│".c(fmt)
-        end
-        buf << "\e[#{@y + @h};#{@x - 1}H" << ("└" + "─" * @w + "┘").c(fmt)
+        # Bottom border.
+        bottom_border = ("└" + "─" * @w + "┘").c(fmt)
+        new_frame << bottom_border
       end
 
-      # Restore original cursor position.
-      buf << "\e[#{o_row};#{o_col}H"
+      # Diff-based update: update only lines that changed.
+      diff_buf = ""
+      new_frame.each_with_index do |line, i|
+        # Determine row number:
+        row_num = @border ? (@y - 1 + i) : (@y + i)
+        # When border is enabled, all lines (including content) start at column (@x - 1)
+        col_num = @border ? (@x - 1) : @x
+        if @prev_frame.nil? || @prev_frame[i] != line ||
+           (@border && (i == 0 || i == new_frame.size - 1))
+          diff_buf << "\e[#{row_num};#{col_num}H" << line
+        end
+      end
 
-      # Print the whole buffer at once.
-      print buf
+      diff_buf << "\e[#{o_row};#{o_col}H"
+      print diff_buf
+      #STDOUT.print "\e[?25h"  # Show cursor - but use Cursor.show instead if needed
 
-      # Uncomment the next line to switched to the alternate screen buffer.
-      #STDOUT.print "\e[?1049l"
-
-      @txt
+      @prev_frame = new_frame
+      new_frame.join("\n")
     end
 
     def textformat(cont)
@@ -439,7 +456,7 @@ module Rcurses
     def calculate_posx
       total_length = 0
       (@ix + @line).times do |i|
-        total_length += @txt[i].pure.length + 1  # +1 for the newline
+        total_length += @txt[i].pure.length + 1  # +1 for newline
       end
       total_length += @pos
       total_length

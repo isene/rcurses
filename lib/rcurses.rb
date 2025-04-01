@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.0: Flicker reduction by double screen buffer
+# Version:    3.1: Flicker reduction by diff rendering
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
