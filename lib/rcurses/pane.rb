@@ -1,4 +1,33 @@
 module Rcurses
+  # A simple display_width function that approximates how many columns a string occupies.
+  # This is a simplified version that may need adjustments for full Unicode support.
+  def self.display_width(str)
+    width = 0
+    str.each_char do |char|
+      cp = char.ord
+      if cp == 0
+        # NUL – no width
+      elsif cp < 32 || (cp >= 0x7F && cp < 0xA0)
+        # Control characters: no width
+        width += 0
+      # Approximate common wide ranges:
+      elsif (cp >= 0x1100 && cp <= 0x115F) ||
+            cp == 0x2329 || cp == 0x232A ||
+            (cp >= 0x2E80 && cp <= 0xA4CF) ||
+            (cp >= 0xAC00 && cp <= 0xD7A3) ||
+            (cp >= 0xF900 && cp <= 0xFAFF) ||
+            (cp >= 0xFE10 && cp <= 0xFE19) ||
+            (cp >= 0xFE30 && cp <= 0xFE6F) ||
+            (cp >= 0xFF00 && cp <= 0xFF60) ||
+            (cp >= 0xFFE0 && cp <= 0xFFE6)
+        width += 2
+      else
+        width += 1
+      end
+    end
+    width
+  end
+
   class Pane
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
@@ -78,12 +107,12 @@ module Rcurses
     end
 
     # Diff-based refresh that minimizes flicker.
-    # Building a frame (an array of lines) that includes borders (if enabled).
-    # Content lines are wrapped in vertical border characters when @border is true.
+    # (This is your previously best-working code.)
+    # We have removed scroll marker insertion from within the double-buffered frame.
+    # Instead, after printing the frame we reprint the right border column.
     def refresh(cont = @text)
       @max_h, @max_w = IO.console.winsize
 
-      # Adjust pane dimensions and positions.
       if @border
         @w = @max_w - 2 if @w > @max_w - 2
         @h = @max_h - 2 if @h > @max_h - 2
@@ -96,9 +125,7 @@ module Rcurses
         @y = 1 if @y < 1; @y = @max_h - @h + 1 if @y + @h > @max_h + 1
       end
 
-      # Save current cursor position.
       o_row, o_col = pos
-
       STDOUT.print "\e[?25l"  # Hide cursor
 
       fmt = [@fg, @bg].compact.join(',')
@@ -107,15 +134,12 @@ module Rcurses
       @ix = @txt.length - 1 if @ix > @txt.length - 1
       @ix = 0 if @ix < 0
 
-      # Build the new frame as an array of strings.
       new_frame = []
       if @border
-        # Top border spans (@w + 2) characters.
         top_border = ("┌" + "─" * @w + "┐").c(fmt)
         new_frame << top_border
       end
 
-      # Build content lines.
       content_rows = @h
       content_rows.times do |i|
         line_str = ""
@@ -136,37 +160,21 @@ module Rcurses
           line_str = " ".c(fmt) * @w
         end
 
-        # If border is enabled, add vertical border characters.
         if @border
           line_str = "│" + line_str + "│"
         end
 
-        # Add scroll markers (overwrite the last character) if needed.
-        if i == 0 and @ix > 0 and @scroll
-          line_str[-1] = "∆".c(fmt)
-          @moreup = true
-        elsif i == content_rows - 1 and @txt.length - @ix > @h and @scroll
-          line_str[-1] = "∇".c(fmt)
-          @moredown = true
-        else
-          @moreup = false
-          @moredown = false
-        end
         new_frame << line_str
       end
 
       if @border
-        # Bottom border.
         bottom_border = ("└" + "─" * @w + "┘").c(fmt)
         new_frame << bottom_border
       end
 
-      # Diff-based update: update only lines that changed.
       diff_buf = ""
       new_frame.each_with_index do |line, i|
-        # Determine row number:
         row_num = @border ? (@y - 1 + i) : (@y + i)
-        # When border is enabled, all lines (including content) start at column (@x - 1)
         col_num = @border ? (@x - 1) : @x
         if @prev_frame.nil? || @prev_frame[i] != line ||
            (@border && (i == 0 || i == new_frame.size - 1))
@@ -176,9 +184,30 @@ module Rcurses
 
       diff_buf << "\e[#{o_row};#{o_col}H"
       print diff_buf
-      #STDOUT.print "\e[?25h"  # Show cursor - but use Cursor.show instead if needed
-
+      #STDOUT.print "\e[?25h"  # We leave the cursor hidden unless explicitly shown
       @prev_frame = new_frame
+
+      # Now, after printing the frame, draw the scroll markers separately.
+      if @scroll
+        # Use the same marker column as before.
+        marker_col = @border ? (@x + @w - 1) : (@x + @w - 1)
+        # Draw top marker at row = @y + 1 (inside the frame)
+        if @ix > 0
+          print "\e[#{@y};#{marker_col}H" + "∆".c(fmt)
+        end
+        # Draw bottom marker at row = @y + @h - 1 (inside the frame)
+        if (@txt.length - @ix) > @h
+          print "\e[#{@y + @h - 1};#{marker_col}H" + "∇".c(fmt)
+        end
+      end
+
+      # Now, reprint the right border column for each content line to fill any holes.
+      if @border
+        (0...@h).each do |i|
+          print "\e[#{@y + i};#{@x + @w}H" + "│".c(fmt)
+        end
+      end
+
       new_frame.join("\n")
     end
 
@@ -533,4 +562,3 @@ module Rcurses
     end
   end
 end
-
