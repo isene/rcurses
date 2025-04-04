@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.2: Fixed scroll markers and UTF-8 double-wide characters breaking borders
+# Version:    3.3: Faster rendering of pane content
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

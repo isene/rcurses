@@ -107,9 +107,7 @@ module Rcurses
     end
 
     # Diff-based refresh that minimizes flicker.
-    # (This is your previously best-working code.)
-    # We have removed scroll marker insertion from within the double-buffered frame.
-    # Instead, after printing the frame we reprint the right border column.
+    # In this updated version we lazily process only the raw lines required to fill the pane.
     def refresh(cont = @text)
       @max_h, @max_w = IO.console.winsize
 
@@ -129,8 +127,32 @@ module Rcurses
       STDOUT.print "\e[?25l"  # Hide cursor
 
       fmt = [@fg, @bg].compact.join(',')
-      @txt = cont.split("\n")
-      @txt = textformat(cont) if @txt.any? { |line| line.pure.length >= @w }
+
+      # Lazy evaluation: If the content or pane width has changed, reinitialize the lazy cache.
+      if !defined?(@cached_text) || @cached_text != cont || @cached_w != @w
+        @raw_txt   = cont.split("\n")
+        @lazy_txt  = []   # This will hold the processed (wrapped) lines as needed.
+        @lazy_index = 0   # Pointer to the next raw line to process.
+        @cached_text = cont
+        @cached_w = @w
+      end
+
+      content_rows = @h
+      # Ensure we have processed enough lines for the current scroll position + visible area.
+      required_lines = @ix + content_rows
+      while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size
+        raw_line = @raw_txt[@lazy_index]
+        # If the raw line is short, no wrapping is needed.
+        if raw_line.respond_to?(:pure) && raw_line.pure.length < @w
+          processed = [raw_line]
+        else
+          processed = split_line_with_ansi(raw_line, @w)
+        end
+        @lazy_txt.concat(processed)
+        @lazy_index += 1
+      end
+      @txt = @lazy_txt
+
       @ix = @txt.length - 1 if @ix > @txt.length - 1
       @ix = 0 if @ix < 0
 
@@ -140,7 +162,6 @@ module Rcurses
         new_frame << top_border
       end
 
-      content_rows = @h
       content_rows.times do |i|
         line_str = ""
         l = @ix + i
@@ -184,24 +205,21 @@ module Rcurses
 
       diff_buf << "\e[#{o_row};#{o_col}H"
       print diff_buf
-      #STDOUT.print "\e[?25h"  # We leave the cursor hidden unless explicitly shown
       @prev_frame = new_frame
 
-      # Now, after printing the frame, draw the scroll markers separately.
+      # Draw scroll markers after printing the frame.
       if @scroll
-        # Use the same marker column as before.
         marker_col = @border ? (@x + @w - 1) : (@x + @w - 1)
-        # Draw top marker at row = @y + 1 (inside the frame)
         if @ix > 0
           print "\e[#{@y};#{marker_col}H" + "∆".c(fmt)
         end
-        # Draw bottom marker at row = @y + @h - 1 (inside the frame)
-        if (@txt.length - @ix) > @h
+        # If there are more processed lines than fit in the pane
+        # OR there remain raw lines to process, show the down marker.
+        if (@txt.length - @ix) > @h || (@lazy_index < @raw_txt.size)
           print "\e[#{@y + @h - 1};#{marker_col}H" + "∇".c(fmt)
         end
       end
 
-      # Now, reprint the right border column for each content line to fill any holes.
       if @border
         (0...@h).each do |i|
           print "\e[#{@y + i};#{@x + @w}H" + "│".c(fmt)
@@ -212,6 +230,8 @@ module Rcurses
     end
 
     def textformat(cont)
+      # This method is no longer used in refresh since we process lazily,
+      # but is kept here if needed elsewhere.
       lines = cont.split("\n")
       result = []
       lines.each do |line|
@@ -562,3 +582,4 @@ module Rcurses
     end
   end
 end
+
