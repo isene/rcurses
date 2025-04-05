@@ -106,6 +106,12 @@ module Rcurses
       refresh
     end
 
+    # full_refresh forces a complete repaint.
+    def full_refresh(cont = @text)
+      @prev_frame = nil
+      refresh(cont)
+    end
+
     # Diff-based refresh that minimizes flicker.
     # In this updated version we lazily process only the raw lines required to fill the pane.
     def refresh(cont = @text)

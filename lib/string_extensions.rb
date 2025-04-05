@@ -34,6 +34,16 @@ class String
     prop
   end
 
+  def clean_ansi
+    # Remove surrounding \e[0m if the string is otherwise unstyled
+    stripped = self.gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
+    if stripped.pure == stripped
+      stripped
+    else
+      self
+    end
+  end
+
   def pure
     self.gsub(/\e\[\d+(?:;\d+)*m/, '')
   end
