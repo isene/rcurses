@@ -130,7 +130,9 @@ module Rcurses
       end
 
       o_row, o_col = pos
-      STDOUT.print "\e[?25l"  # Hide cursor
+
+      # Hide cursor and disable auto-wrap (minimal fix)
+      STDOUT.print "\e[?25l\e[?7l"
 
       fmt = [@fg, @bg].compact.join(',')
 
@@ -149,7 +151,7 @@ module Rcurses
       while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size
         raw_line = @raw_txt[@lazy_index]
         # If the raw line is short, no wrapping is needed.
-        if raw_line.respond_to?(:pure) && raw_line.pure.length < @w
+        if raw_line.respond_to?(:pure) && Rcurses.display_width(raw_line.pure) < @w
           processed = [raw_line]
         else
           processed = split_line_with_ansi(raw_line, @w)
@@ -172,7 +174,7 @@ module Rcurses
         line_str = ""
         l = @ix + i
         if @txt[l].to_s != ""
-          pl = @w - @txt[l].pure.length
+          pl = @w - Rcurses.display_width(@txt[l].pure)
           pl = 0 if pl < 0
           hl = pl / 2
           case @align
@@ -209,7 +211,8 @@ module Rcurses
         end
       end
 
-      diff_buf << "\e[#{o_row};#{o_col}H"
+      # Re-enable wrap just before printing the final buffer
+      diff_buf << "\e[#{o_row};#{o_col}H\e[?7h"
       print diff_buf
       @prev_frame = new_frame
 
@@ -511,7 +514,7 @@ module Rcurses
     def calculate_posx
       total_length = 0
       (@ix + @line).times do |i|
-        total_length += @txt[i].pure.length + 1  # +1 for newline
+        total_length += Rcurses.display_width(@txt[i].pure) + 1  # +1 for newline
       end
       total_length += @pos
       total_length
@@ -520,7 +523,7 @@ module Rcurses
     def calculate_line_start_pos
       total_length = 0
       (@ix + @line).times do |i|
-        total_length += @txt[i].pure.length + 1
+        total_length += Rcurses.display_width(@txt[i].pure) + 1
       end
       total_length
     end
@@ -556,7 +559,7 @@ module Rcurses
         else
           words = token.scan(/\s+|\S+/)
           words.each do |word|
-            word_length = word.gsub(ansi_regex, '').length
+            word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
             if current_line_length + word_length <= w
               current_line << word
               current_line_length += word_length
@@ -571,7 +574,7 @@ module Rcurses
                 current_line << part
                 result << current_line
                 word = word[w..-1]
-                word_length = word.gsub(ansi_regex, '').length
+                word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
                 current_line = active_sequences.join
                 current_line_length = 0
               end
