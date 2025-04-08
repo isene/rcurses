@@ -35,40 +35,50 @@ module Rcurses
     attr_accessor :x, :y, :w, :h, :fg, :bg
     attr_accessor :border, :scroll, :text, :ix, :align, :prompt
     attr_accessor :moreup, :moredown
+    attr_accessor :record, :history
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
       @max_h, @max_w = IO.console.winsize
-      @x       = x
-      @y       = y
-      @w       = w
-      @h       = h
-      @fg, @bg = fg, bg
-      @text    = ""     # Initialize text variable
-      @align   = "l"    # Default alignment
-      @scroll  = true   # Enable scroll indicators
-      @prompt  = ""     # Prompt for editline
-      @ix      = 0      # Starting text line index
-      @prev_frame = nil # Holds the previously rendered frame (array of lines)
-      @line = 0         # For cursor tracking during editing:
-      @pos  = 0         # For cursor tracking during editing:
+      @x          = x
+      @y          = y
+      @w          = w
+      @h          = h
+      @fg, @bg    = fg, bg
+      @text       = ""     # Initialize text variable
+      @align      = "l"    # Default alignment
+      @scroll     = true   # Enable scroll indicators
+      @prompt     = ""     # Prompt for editline
+      @ix         = 0      # Starting text line index
+      @prev_frame = nil    # Holds the previously rendered frame (array of lines)
+      @line       = 0      # For cursor tracking during editing:
+      @pos        = 0      # For cursor tracking during editing:
+      @record     = false  # Don't record history unless explicitly set to true
+      @history    = []     # History array
     end
 
-    def move(dx, dy)
-      @x += dx
-      @y += dy
-      refresh
+    def text=(new_text)
+      (@history << @text) if @record && @text
+      @text = new_text
     end
 
     def ask(prompt, text)
       @prompt = prompt
       @text   = text
       editline
+      (@history << @text) if @record && !@text.empty?
       @text
-    end
+    end 
 
-    def puts(text)
+    def say(text)
+      (@history << text) if @record && !text.empty?
       @text = text
       @ix   = 0
+      refresh 
+    end 
+
+    def move(dx, dy)
+      @x += dx
+      @y += dy
       refresh
     end
 
@@ -248,11 +258,6 @@ module Rcurses
         result.concat(split_lines)
       end
       result
-    end
-
-    def puts(txt)
-      @text = txt
-      refresh
     end
 
     def right
@@ -443,6 +448,7 @@ module Rcurses
         cont = @text.pure.slice(0, content_len)
         @pos = cont.length
         chr = ''
+        history_index = @history.size
 
         while chr != 'ESC'
           col(@x + prompt_len)
@@ -477,6 +483,22 @@ module Rcurses
           when 'ENTER'
             @text = parse(cont)
             chr = 'ESC'
+          when 'UP'
+            if @history.any? && history_index > 0
+              history_index -= 1
+              cont = @history[history_index].pure.slice(0, content_len)
+              @pos = cont.length
+            end
+          when 'DOWN'
+            if history_index < @history.size - 1
+              history_index += 1
+              cont = @history[history_index].pure.slice(0, content_len)
+              @pos = cont.length
+            elsif history_index == @history.size - 1
+              history_index += 1
+              cont = ""
+              @pos = 0
+            end
           when /^.$/
             if @pos < content_len
               cont.insert(@pos, chr)

@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.3: Faster rendering of pane content
+# Version:    3.4.2: Changed method 'puts' to 'say'
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
