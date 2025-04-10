@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.4.2: Changed method 'puts' to 'say'
+# Version:    3.4.3: Stopped parsing of bold/italics etc in editline
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

@@ -481,7 +481,7 @@ module Rcurses
             cont = ''
             @pos = 0
           when 'ENTER'
-            @text = parse(cont)
+            @text = cont
             chr = 'ESC'
           when 'UP'
             if @history.any? && history_index > 0
