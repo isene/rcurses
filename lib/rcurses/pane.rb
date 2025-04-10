@@ -76,6 +76,12 @@ module Rcurses
       refresh 
     end 
 
+    def clear
+      @text = ""
+      @ix   = 0
+      full_refresh 
+    end
+
     def move(dx, dy)
       @x += dx
       @y += dy
