@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.6: Better clean_ansi
+# Version:    3.6.1: Minor fix to clean_ansi
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

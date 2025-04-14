@@ -36,7 +36,7 @@ class String
 
   def clean_ansi
     # Remove a leading and trailing reset code if present, fixing extra \e[0m introduced by some commands
-    self.gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
+    self.gsub(/\e\[0m(?=\e\[38;5)/, '').gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
   end
 
   def pure
