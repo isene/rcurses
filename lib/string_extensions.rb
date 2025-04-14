@@ -35,13 +35,8 @@ class String
   end
 
   def clean_ansi
-    # Remove surrounding \e[0m if the string is otherwise unstyled
-    stripped = self.gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
-    if stripped.pure == stripped
-      stripped
-    else
-      self
-    end
+    # Remove a leading and trailing reset code if present, fixing extra \e[0m introduced by some commands
+    self.gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
   end
 
   def pure

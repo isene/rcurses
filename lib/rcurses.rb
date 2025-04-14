@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.5: Added method 'clear' to pane class
+# Version:    3.6: Better clean_ansi
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
