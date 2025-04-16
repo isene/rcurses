@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.6.2: Flush any residue of characters before returning chr
+# Version:    3.6.3: Reverting last change as it killed pasting in editline
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

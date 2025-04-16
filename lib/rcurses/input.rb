@@ -154,15 +154,6 @@ module Rcurses
       else chr = ""
       end
 
-      # Flush any extra input characters from STDIN
-      while IO.select([$stdin], nil, nil, 0)
-        begin
-          $stdin.read_nonblock(1024)
-        rescue IO::WaitReadable, EOFError
-          break
-        end
-      end
-
       chr
     end
   end
