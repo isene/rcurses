@@ -13,7 +13,7 @@ module Rcurses
       if c == "\e"
         if IO.select([$stdin], nil, nil, 0.05)
           begin
-            seq << $stdin.read_nonblock(1024)
+            seq << $stdin.read_nonblock(16)
           rescue IO::WaitReadable, EOFError
           end
         end

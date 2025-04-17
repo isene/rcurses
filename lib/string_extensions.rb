@@ -35,8 +35,14 @@ class String
   end
 
   def clean_ansi
-    # Remove a leading and trailing reset code if present, fixing extra \e[0m introduced by some commands
-    self.gsub(/\e\[0m(?=\e\[38;5)/, '').gsub(/\A\e\[0m/, '').gsub(/\e\[0m\z/, '')
+    dup
+      # 1) kill any “\e[0m” that follows another ANSI‐code (so “\e[7m\e[0mtest” → “\e[7mtest”)
+      .gsub(/\e\[[\d;]+m\e\[0m/, '\0'.sub("\e[0m", ''))
+      # 2) kill any “\e[0m” that immediately precedes non‐ESC output (so stray resets just before text)
+      .gsub(/\e\[0m(?=[^\e])/, '')
+      # 3) kill leading or trailing reset codes
+      .gsub(/\A\e\[0m/, '')
+      .gsub(/\e\[0m\z/, '')
   end
 
   def pure
