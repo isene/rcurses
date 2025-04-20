@@ -534,6 +534,9 @@ module Rcurses
           $stdin.read_nonblock(4096) rescue break
         end
       end
+      prompt_len = @prompt.pure.length
+      new_col    = @x + prompt_len + (@pos > 0 ? @pos - 1 : 0)
+      col(new_col)
       Rcurses::Cursor.hide
     end
 
