@@ -1,6 +1,6 @@
 module Rcurses
   module Input
-    def getchr(t = nil)
+    def getchr(t = nil, flush: true)
       begin
         # 1) Read a byte (with optional timeout)
         begin
@@ -111,11 +111,13 @@ module Rcurses
               else ""
               end
       ensure
-         while IO.select([$stdin], nil, nil, 0)
-          begin
-            $stdin.read_nonblock(4096)
-          rescue IO::WaitReadable, EOFError
-            break
+        if flush
+          while IO.select([$stdin], nil, nil, 0)
+            begin
+              $stdin.read_nonblock(4096)
+            rescue IO::WaitReadable, EOFError
+              break
+            end
           end
         end
       end

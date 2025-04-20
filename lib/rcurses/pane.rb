@@ -342,7 +342,8 @@ module Rcurses
 
     def edit
       begin
-        STDIN.raw!
+        STDIN.cooked!  rescue nil
+        STDIN.echo = true rescue nil
         Rcurses::Cursor.show
         content = @text.pure.gsub("\n", "¬\n")
         @ix    = 0
@@ -354,7 +355,7 @@ module Rcurses
         while input_char != 'ESC'
           row(@y + @line)
           col(@x + @pos)
-          input_char = getchr
+          input_char = getchr(flush: false)
           case input_char
           when 'C-L'
             @align = 'l'
@@ -432,14 +433,19 @@ module Rcurses
           @txt = refresh(content)
         end
       ensure
-        STDIN.cooked!
+        STDIN.raw!         rescue nil  
+        STDIN.echo = false rescue nil
+        while IO.select([$stdin], nil, nil, 0)
+          $stdin.read_nonblock(4096) rescue break
+        end
       end
       Rcurses::Cursor.hide
     end
 
     def editline
       begin
-        STDIN.raw!
+        STDIN.cooked!  rescue nil
+        STDIN.echo = true rescue nil
         Rcurses::Cursor.show
         @x = [[@x, 1].max, @max_w - @w + 1].min
         @y = [[@y, 1].max, @max_h - @h + 1].min
@@ -461,7 +467,7 @@ module Rcurses
           cont = cont.slice(0, content_len)
           print cont.ljust(content_len).c(fmt)
           col(@x + prompt_len + @pos)
-          chr = getchr
+          chr = getchr(flush: false)
           case chr
           when 'LEFT'
             @pos -= 1 if @pos > 0
@@ -522,7 +528,11 @@ module Rcurses
           end
         end
       ensure
-        STDIN.cooked!
+        STDIN.raw!         rescue nil  
+        STDIN.echo = false rescue nil
+        while IO.select([$stdin], nil, nil, 0)
+          $stdin.read_nonblock(4096) rescue break
+        end
       end
       Rcurses::Cursor.hide
     end
