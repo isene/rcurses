@@ -208,8 +208,7 @@ module Rcurses
       new_frame.each_with_index do |line, i|
         row_num = @y + i
         col_num = @x
-        if @prev_frame.nil? || @prev_frame[i] != line ||
-           (@border && (i == 0 || i == new_frame.size - 1))
+        if @prev_frame.nil? || @prev_frame[i] != line
           diff_buf << "\e[#{row_num};#{col_num}H" << line
         end
       end
@@ -221,7 +220,7 @@ module Rcurses
 
       # Draw scroll markers after printing the frame.
       if @scroll
-        marker_col = @border ? (@x + @w - 1) : (@x + @w - 1)
+        marker_col = @x + @w - 1
         if @ix > 0
           print "\e[#{@y};#{marker_col}H" + "∆".c(fmt)
         end
