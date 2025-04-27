@@ -181,10 +181,6 @@ module Rcurses
       @ix = 0 if @ix < 0
 
       new_frame = []
-      if @border
-        top_border = ("┌" + "─" * @w + "┐").c(fmt)
-        new_frame << top_border
-      end
 
       content_rows.times do |i|
         line_str = ""
@@ -205,22 +201,13 @@ module Rcurses
           line_str = " ".c(fmt) * @w
         end
 
-        if @border
-          line_str = "│" + line_str + "│"
-        end
-
         new_frame << line_str
-      end
-
-      if @border
-        bottom_border = ("└" + "─" * @w + "┘").c(fmt)
-        new_frame << bottom_border
       end
 
       diff_buf = ""
       new_frame.each_with_index do |line, i|
-        row_num = @border ? (@y - 1 + i) : (@y + i)
-        col_num = @border ? (@x - 1) : @x
+        row_num = @y + i
+        col_num = @x
         if @prev_frame.nil? || @prev_frame[i] != line ||
            (@border && (i == 0 || i == new_frame.size - 1))
           diff_buf << "\e[#{row_num};#{col_num}H" << line
@@ -246,9 +233,15 @@ module Rcurses
       end
 
       if @border
+        # top
+        print "\e[#{@y - 1};#{@x - 1}H" + ("┌" + "─" * @w + "┐").c(fmt)
+        # sides
         (0...@h).each do |i|
+          print "\e[#{@y + i};#{@x - 1}H"  + "│".c(fmt)
           print "\e[#{@y + i};#{@x + @w}H" + "│".c(fmt)
         end
+        # bottom
+        print "\e[#{@y + @h};#{@x - 1}H" + ("└" + "─" * @w + "┘").c(fmt)
       end
 
       new_frame.join("\n")

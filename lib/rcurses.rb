@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.7.4: Fixed editline pos bug
+# Version:    3.8: Fixed border fragments upon utf-8 characters
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
