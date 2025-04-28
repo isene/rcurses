@@ -6,6 +6,10 @@
 
 Create curses applications for the terminal easier than ever.
 
+Here's a somewhat simple example of a TUI program using rcurses: The [T-REX](https://github.com/isene/T-REX) calculator.
+
+And here's a much more involved example: The [RTFM](https://github.com/isene/RTFM) terminal file manager.
+
 # Why?
 Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
 
