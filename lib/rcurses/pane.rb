@@ -150,7 +150,7 @@ module Rcurses
       # Hide cursor and disable auto-wrap (minimal fix)
       STDOUT.print "\e[?25l\e[?7l"
 
-      fmt = [@fg, @bg].compact.join(',')
+      fmt = [@fg.to_s, @bg.to_s].join(',')
 
       # Lazy evaluation: If the content or pane width has changed, reinitialize the lazy cache.
       if !defined?(@cached_text) || @cached_text != cont || @cached_w != @w
@@ -444,7 +444,7 @@ module Rcurses
         @scroll = false
         @ix = 0
         row(@y)
-        fmt = [@fg, @bg].compact.join(',')
+        fmt = [@fg.to_s, @bg.to_s].join(',')
         col(@x)
         print @prompt.c(fmt)
         prompt_len = @prompt.pure.length

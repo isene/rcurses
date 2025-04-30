@@ -35,3 +35,9 @@ pane_mid.refresh
 pane_bottom.prompt   = "Now hit ENTER again "
 pane_bottom.text     = ""
 pane_bottom.editline
+
+# Reset terminal
+$stdin.cooked!
+$stdin.echo = true
+Rcurses::clear_screen
+Rcurses::Cursor.show
