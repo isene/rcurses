@@ -243,6 +243,17 @@ mypane.edit
 
 And - try running the example file `rcurses_example.rb`.
 
+# Clean exit for your application
+To restore the terminal fully after you exit your application, add this:
+```
+at_exit do # Always restore terminal state on quit (or fatal)
+  $stdin.cooked!
+  $stdin.echo = true
+  Rcurses.clear_screen
+  Cursor.show
+end
+```
+
 # Not yet implemented
 Let me know what other features you like to see.
 
