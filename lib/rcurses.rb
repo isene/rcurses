@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    3.9: Fixed bug on pane parameters passed as nil. Better examples.
+# Version:    4.0: Added border_refresh to refresh only the border of a pane
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

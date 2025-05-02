@@ -128,6 +128,35 @@ module Rcurses
       refresh(cont)
     end
 
+    # Refresh only the border
+    def border_refresh
+      left_col   = @x - 1
+      right_col  = @x + @w
+      top_row    = @y - 1
+      bottom_row = @y + @h
+
+      if @border
+        fmt = [@fg.to_s, @bg.to_s].join(',')
+        top = ("┌" + "─" * @w + "┐").c(fmt)
+        STDOUT.print "\e[#{top_row};#{left_col}H" + top
+        (0...@h).each do |i|
+          row = @y + i
+          STDOUT.print "\e[#{row};#{left_col}H"  + "│".c(fmt)
+          STDOUT.print "\e[#{row};#{right_col}H" + "│".c(fmt)
+        end
+        bottom = ("└" + "─" * @w + "┘").c(fmt)
+        STDOUT.print "\e[#{bottom_row};#{left_col}H" + bottom
+      else
+        STDOUT.print "\e[#{top_row};#{left_col}H" + " " * (@w + 2)
+        (0...@h).each do |i|
+          row = @y + i
+          STDOUT.print "\e[#{row};#{left_col}H"  + " "
+          STDOUT.print "\e[#{row};#{right_col}H" + " "
+        end
+        STDOUT.print "\e[#{bottom_row};#{left_col}H" + " " * (@w + 2)
+      end
+    end
+
     # Diff-based refresh that minimizes flicker.
     # In this updated version we lazily process only the raw lines required to fill the pane.
     def refresh(cont = @text)
