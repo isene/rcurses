@@ -1,124 +1,160 @@
+# string_extensions.rb
+
 class String
-  # Existing methods...
-  def fg(fg)    ; color(self, "\e[38;5;#{fg}m", "\e[0m")  ; end
-  def bg(bg)    ; color(self, "\e[48;5;#{bg}m", "\e[0m")  ; end
-  def fb(fg, bg); color(self, "\e[38;5;#{fg};48;5;#{bg}m"); end
-  def b         ; color(self, "\e[1m", "\e[22m")          ; end
-  def i         ; color(self, "\e[3m", "\e[23m")          ; end
-  def u         ; color(self, "\e[4m", "\e[24m")          ; end
-  def l         ; color(self, "\e[5m", "\e[25m")          ; end
-  def r         ; color(self, "\e[7m", "\e[27m")          ; end
+  # 256-color or truecolor RGB foreground
+  def fg(color)
+    sp, ep = if color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
+               r, g, b = color.scan(/../).map { |c| c.to_i(16) }
+               ["\e[38;2;#{r};#{g};#{b}m", "\e[0m"]
+             else
+               ["\e[38;5;#{color}m", "\e[0m"]
+             end
+    color(self, sp, ep)
+  end
 
-  # Internal function
+  # 256-color or truecolor RGB background
+  def bg(color)
+    sp, ep = if color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
+               r, g, b = color.scan(/../).map { |c| c.to_i(16) }
+               ["\e[48;2;#{r};#{g};#{b}m", "\e[0m"]
+             else
+               ["\e[48;5;#{color}m", "\e[0m"]
+             end
+    color(self, sp, ep)
+  end
+
+  # Both fg and bg in one go
+  def fb(fg_color, bg_color)
+    parts = []
+    if fg_color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
+      r, g, b = fg_color.scan(/../).map { |c| c.to_i(16) }
+      parts << "38;2;#{r};#{g};#{b}"
+    else
+      parts << "38;5;#{fg_color}"
+    end
+
+    if bg_color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
+      r, g, b = bg_color.scan(/../).map { |c| c.to_i(16) }
+      parts << "48;2;#{r};#{g};#{b}"
+    else
+      parts << "48;5;#{bg_color}"
+    end
+
+    sp = "\e[#{parts.join(';')}m"
+    color(self, sp, "\e[0m")
+  end
+
+  # bold, italic, underline, blink, reverse
+  def b; color(self, "\e[1m",   "\e[22m"); end
+  def i; color(self, "\e[3m",   "\e[23m"); end
+  def u; color(self, "\e[4m",   "\e[24m"); end
+  def l; color(self, "\e[5m",   "\e[25m"); end
+  def r; color(self, "\e[7m",   "\e[27m"); end
+
+  # Internal helper - wraps +text+ in start/end sequences,
+  # and re-applies start on every newline.
   def color(text, sp, ep = "\e[0m")
-    # Replace every newline with a newline followed by the start sequence,
-    # so that formatting is reestablished on each new line.
-    text = text.gsub("\n", "#{ep}\n#{sp}")
-    "#{sp}#{text}#{ep}"
+    t = text.gsub("\n", "#{ep}\n#{sp}")
+    "#{sp}#{t}#{ep}"
   end
 
-  # Use format "TEST".c("204,45,bui") to print "TEST" in bold, underline, italic, fg=204 and bg=45
+  # Combined code:  "foo".c("FF0000,00FF00,bui")
+  # — 6-hex or decimal for fg, then for bg, then letters b/i/u/l/r
   def c(code)
-    prop = "\e["
-    prop += "38;5;#{code.match(/^\d+/).to_s};"      if code.match(/^\d+/)
-    prop += "48;5;#{code.match(/(?<=,)\d+/).to_s};" if code.match(/(?<=,)\d+/)
-    prop += "1;" if code.include?('b')
-    prop += "3;" if code.include?('i')
-    prop += "4;" if code.include?('u')
-    prop += "5;" if code.include?('l')
-    prop += "7;" if code.include?('r')
-    prop.chop! if prop[-1] == ";"
-    prop += "m"
-    prop += self
-    prop += "\e[0m"
-    prop
+    parts = code.split(',')
+    seq   = []
+
+    fg = parts.shift
+    if fg =~ /\A[0-9A-Fa-f]{6}\z/
+      r,g,b = fg.scan(/../).map{|c|c.to_i(16)}
+      seq << "38;2;#{r};#{g};#{b}"
+    elsif fg =~ /\A\d+\z/
+      seq << "38;5;#{fg}"
+    end
+
+    if parts.any?
+      bg = parts.shift
+      if bg =~ /\A[0-9A-Fa-f]{6}\z/
+        r,g,b = bg.scan(/../).map{|c|c.to_i(16)}
+        seq << "48;2;#{r};#{g};#{b}"
+      elsif bg =~ /\A\d+\z/
+        seq << "48;5;#{bg}"
+      end
+    end
+
+    seq << '1' if code.include?('b')
+    seq << '3' if code.include?('i')
+    seq << '4' if code.include?('u')
+    seq << '5' if code.include?('l')
+    seq << '7' if code.include?('r')
+
+    "\e[#{seq.join(';')}m#{self}\e[0m"
   end
 
-  def clean_ansi
-    dup
-      # 1) kill any “\e[0m” that follows another ANSI‐code (so “\e[7m\e[0mtest” → “\e[7mtest”)
-      .gsub(/\e\[[\d;]+m\e\[0m/, '\0'.sub("\e[0m", ''))
-      # 2) kill any “\e[0m” that immediately precedes non‐ESC output (so stray resets just before text)
-      .gsub(/\e\[0m(?=[^\e])/, '')
-      # 3) kill leading or trailing reset codes
-      .gsub(/\A\e\[0m/, '')
-      .gsub(/\e\[0m\z/, '')
-  end
-
+  # Strip all ANSI SGR sequences
   def pure
-    self.gsub(/\e\[\d+(?:;\d+)*m/, '')
+    gsub(/\e\[\d+(?:;\d+)*m/, '')
   end
 
-  # Shortens the visible (pure) text to n characters, preserving any ANSI sequences.
+  # Remove stray leading/trailing reset if the string has no other styling
+  def clean_ansi
+    gsub(/\A(?:\e\[0m)+/, '').gsub(/\e\[0m\z/, '')
+  end
+
+  # Truncate the *visible* length to n, but preserve embedded ANSI
   def shorten(n)
     count = 0
-    result = ""
-    i = 0
-    while i < self.length && count < n
-      if self[i] == "\e" # start of an ANSI escape sequence
-        if m = self[i..-1].match(/\A(\e\[\d+(?:;\d+)*m)/)
-          result << m[1]
-          i += m[1].length
-        else
-          # Fallback if pattern doesn’t match: treat as a normal character.
-          result << self[i]
-          i += 1
-          count += 1
-        end
+    out   = ''
+    i     = 0
+
+    while i < length && count < n
+      if self[i] == "\e" && (m = self[i..-1].match(/\A(\e\[\d+(?:;\d+)*m)/))
+        out << m[1]
+        i   += m[1].length
       else
-        result << self[i]
+        out << self[i]
+        i   += 1
         count += 1
-        i += 1
       end
     end
-    result
+
+    out
   end
 
-  # Inserts the given substring at the provided visible character position.
-  # A negative position means insertion at the end.
-  # When inserting at the end and the string ends with an ANSI escape sequence,
-  # the insertion is placed before that trailing ANSI sequence.
+  # Insert +insertion+ at visible position +pos+ (negative → end),
+  # respecting and re-inserting existing ANSI sequences.
   def inject(insertion, pos)
-    pure_text = self.pure
-    visible_length = pure_text.length
-    pos = visible_length if pos < 0
+    pure_txt      = pure
+    visible_len   = pure_txt.length
+    pos           = visible_len if pos < 0
 
-    count = 0
-    result = ""
-    i = 0
-    injected = false
+    count, out, i, injected = 0, '', 0, false
 
-    while i < self.length
-      if self[i] == "\e"  # Start of an ANSI sequence.
-        if m = self[i..-1].match(/\A(\e\[\d+(?:;\d+)*m)/)
-          result << m[1]
-          i += m[1].length
-        else
-          result << self[i]
-          i += 1
-        end
+    while i < length
+      if self[i] == "\e" && (m = self[i..-1].match(/\A(\e\[\d+(?:;\d+)*m)/))
+        out << m[1]
+        i   += m[1].length
       else
         if count == pos && !injected
-          result << insertion
+          out << insertion
           injected = true
         end
-        result << self[i]
-        count += 1
-        i += 1
+        out << self[i]
+        count  += 1
+        i      += 1
       end
     end
 
-    # If we haven't injected (i.e. pos equals visible_length),
-    # check for a trailing ANSI sequence and insert before it.
     unless injected
-      if result =~ /(\e\[\d+(?:;\d+)*m)\z/
+      if out =~ /(\e\[\d+(?:;\d+)*m)\z/
         trailing = $1
-        result = result[0...-trailing.length] + insertion + trailing
+        out      = out[0...-trailing.length] + insertion + trailing
       else
-        result << insertion
+        out << insertion
       end
     end
 
-    result
+    out
   end
 end
+

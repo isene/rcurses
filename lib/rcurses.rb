@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.0: Added border_refresh to refresh only the border of a pane
+# Version:    4.5: Full RGB support in addition to 256-colors
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

@@ -10,6 +10,9 @@ Here's a somewhat simple example of a TUI program using rcurses: The [T-REX](htt
 
 And here's a much more involved example: The [RTFM](https://github.com/isene/RTFM) terminal file manager.
 
+# NOTE: Version 4.5 gives full RGB support in addition to 256-colors
+Just write a color as a string - e.g. `"d533e0"` for a hexadecimal RGB color (or use the terminal 256 colors by supplying an integer in the range 0-255)
+
 # Why?
 Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
 
@@ -98,12 +101,14 @@ bottom         | Scroll to the bottom of the text in the pane
 top            | Scroll to the top of the text in the pane
 
 # class String extensions
-Method extensions provided for the class String:
+Method extensions provided for the class String.
+
+A color can either be an integer in the range 0-255 for the usual 256 colors in a terminal, or it can be a string representing RGB. So both of these are valid: `string.fg(219)` and `string.fg("4d22a0")`.
 
 Method         | Description
 ---------------|---------------------------------------------------------------
 fg(fg)         | Set text to be printed with the foreground color `fg` (example: `"TEST".fg(84)`)
-bg(bg)         | Set text to be printed with the background color `bg` (example: `"TEST".bg(196)`)
+bg(bg)         | Set text to be printed with the background color `bg` (example: `"TEST".bg("dd32a9")`)
 fb(fg, bg)     | Set text to be printed with the foreground color `fg` and background color `bg` (example: `"TEST".fb(84,196)`)
 b              | Set text to be printed in bold (example: `"TEST".b`)
 i              | Set text to be printed in italic (example: `"TEST".i`)
