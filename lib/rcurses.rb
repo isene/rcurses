@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.5: Full RGB support in addition to 256-colors
+# Version:    4.6: Fixed a broken pane.edit. Fixed ANSI termination bug in RGB support.
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

@@ -88,7 +88,13 @@ move(x,y)      | Move the pane by `x`and `y` (`mypane.move(-4,5)` will move the 
 refresh        | Refreshes/redraws the Pane with content
 border_refresh | Refresh the Pane border only
 full_refresh   | Refreshes/redraws the Pane with content completely (without diff rendering)
-edit           | An editor for the Pane. When this is invoked, all existing font dressing is stripped and the user gets to edit the raw text. The user can add font effects similar to Markdown; Use an asterisk before and after text to be drawn in bold, text between forward-slashes become italic, and underline before and after text means the text will be underlined, a hash-sign before and after text makes the text reverse colored. You can also combine a whole set of dressings in this format: `<23,245,biurl|Hello World!>` - this will make "Hello World!" print in the color 23 with the background color 245 (regardless of the Pane's fg/bg setting) in bold, italic, underlined, reversed colored and blinking. Hitting `ESC` while in edit mode will disregard the edits, while `Ctrl-S` will save the edits
+edit           | An editor for the Pane. When this is invoked, all existing font dressing is stripped and the user gets to edit the raw text. 
+                 The user can add font effects similar to Markdown; Use an asterisk before and after text to be drawn in bold, text between 
+                 forward-slashes become italic, and underline before and after text means the text will be underlined, a hash-sign before and 
+                 after text makes the text reverse colored. You can also combine a whole set of dressings in this format: `<23,245,biurl\|Hello World!>` - 
+                 this will make "Hello World!" print in the color 23 with the background color 245 (regardless of the Pane's fg/bg setting) 
+                 in bold, italic, underlined, reversed colored and blinking. Hitting `ESC` while in edit mode will disregard the edits, 
+                 while `Ctrl-S` will save the edits
 editline       | Used for one-line Panes. It will print the content of the property `prompt` and then the property `text` that can then be edited by the user. Hitting `ESC` will disregard the edits, while `ENTER` will save the edited text
 clear          | Clears the pane
 say(text)      | Short form for setting panel.text, then doing a refresh of that panel
@@ -115,7 +121,7 @@ i              | Set text to be printed in italic (example: `"TEST".i`)
 u              | Set text to be printed underlined (example: `"TEST".u`)
 l              | Set text to be printed blinking (example: `"TEST".l`)
 r              | Set text to be printed in reverse colors (example: `"TEST".r`)
-c(code)        | Use coded format like "TEST".c("204,45,bui") to print "TEST" in bold, underline italic, fg=204 and bg=45 (the format is `.c("fg,bg,biulr"))
+c(code)        | Use coded format like "TEST".c("204,45,bui") to print "TEST" in bold, underline italic, fg=204 and bg=45 (the format is `.c("fg,bg,biulr")`)
 pure           | Strip text of any "dressing" (example: with `text = "TEST".b`, you will have bold text in the variable `text`, then with `text.pure` it will show "uncoded" or pure text)
 ansi_clean     | Strip seemingly uncolored strings of ansi code (those that are enclosed in "\e[0m"
 shorten(n)     | Shorten the pure version of the string to 'n' characters, preserving any ANSI coding
