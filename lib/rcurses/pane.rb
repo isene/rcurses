@@ -186,7 +186,7 @@ module Rcurses
         @raw_txt   = cont.split("\n")
         @lazy_txt  = []   # This will hold the processed (wrapped) lines as needed.
         @lazy_index = 0   # Pointer to the next raw line to process.
-        @cached_text = cont
+        @cached_text = cont.dup
         @cached_w = @w
       end
 
@@ -365,15 +365,19 @@ module Rcurses
       begin
         STDIN.cooked!  rescue nil
         STDIN.echo = true rescue nil
-        Rcurses::Cursor.show
+        # Prepare content with visible newline markers
         content = @text.pure.gsub("\n", "¬\n")
-        @ix    = 0
-        @line  = 0
-        @pos   = 0
-        @txt   = refresh(content)
+        # Reset editing cursor state
+        @ix = 0
+        @line = 0
+        @pos = 0
+        # Initial render sets @txt internally for display and cursor math
+        refresh(content)
+        Rcurses::Cursor.show
         input_char = ''
 
         while input_char != 'ESC'
+          # Move the terminal cursor to the logical text cursor
           row(@y + @line)
           col(@x + @pos)
           input_char = getchr(flush: false)
@@ -424,9 +428,7 @@ module Rcurses
             current_line_length = @txt[@ix + @line]&.length || 0
             @pos = current_line_length
           when 'C-HOME'
-            @ix = 0
-            @line = 0
-            @pos = 0
+            @ix = 0; @line = 0; @pos = 0
           when 'C-END'
             total_lines = @txt.length
             @ix = [total_lines - @h, 0].max
@@ -443,6 +445,7 @@ module Rcurses
             right
           end
 
+          # Handle any buffered input
           while IO.select([$stdin], nil, nil, 0)
             input_char = $stdin.read_nonblock(1) rescue nil
             break unless input_char
@@ -451,7 +454,9 @@ module Rcurses
             right
           end
 
-          @txt = refresh(content)
+          # Re-render without overwriting the internal @txt
+          refresh(content)
+          Rcurses::Cursor.show
         end
       ensure
         STDIN.raw!         rescue nil  

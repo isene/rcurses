@@ -1,25 +1,25 @@
 # string_extensions.rb
 
 class String
-  # 256-color or truecolor RGB foreground
+  # 256-color or truecolor RGB foregroundbreset only the fg (SGR 39)
   def fg(color)
     sp, ep = if color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
-               r, g, b = color.scan(/../).map { |c| c.to_i(16) }
-               ["\e[38;2;#{r};#{g};#{b}m", "\e[0m"]
-             else
-               ["\e[38;5;#{color}m", "\e[0m"]
-             end
+      r, g, b = color.scan(/../).map { |c| c.to_i(16) }
+      ["\e[38;2;#{r};#{g};#{b}m", "\e[39m"]
+    else
+      ["\e[38;5;#{color}m", "\e[39m"]
+    end
     color(self, sp, ep)
   end
 
-  # 256-color or truecolor RGB background
+  # 256-color or truecolor RGB backgroundbreset only the bg (SGR 49)
   def bg(color)
     sp, ep = if color.to_s =~ /\A[0-9A-Fa-f]{6}\z/
-               r, g, b = color.scan(/../).map { |c| c.to_i(16) }
-               ["\e[48;2;#{r};#{g};#{b}m", "\e[0m"]
-             else
-               ["\e[48;5;#{color}m", "\e[0m"]
-             end
+      r, g, b = color.scan(/../).map { |c| c.to_i(16) }
+      ["\e[48;2;#{r};#{g};#{b}m", "\e[49m"]
+    else
+      ["\e[48;5;#{color}m", "\e[49m"]
+    end
     color(self, sp, ep)
   end
 
@@ -41,7 +41,7 @@ class String
     end
 
     sp = "\e[#{parts.join(';')}m"
-    color(self, sp, "\e[0m")
+    color(self, sp, "\e[39;49m")
   end
 
   # bold, italic, underline, blink, reverse
