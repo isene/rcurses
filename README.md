@@ -249,7 +249,14 @@ mypane.edit
 
 And - try running the example file `rcurses_example.rb`.
 
-# Clean exit for your application
+# Clean start and exit for your application
+At the start of your program add these two lines to prevent any accidental
+straggling character residues to appear in the terminal:
+```
+$stdin.raw!
+$stdin.echo = false
+```
+
 To restore the terminal fully after you exit your application, add this:
 ```
 at_exit do # Always restore terminal state on quit (or fatal)
