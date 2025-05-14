@@ -33,7 +33,7 @@ module Rcurses
     include Cursor
     include Input
     attr_accessor :x, :y, :w, :h, :fg, :bg
-    attr_accessor :border, :scroll, :text, :ix, :align, :prompt
+    attr_accessor :border, :scroll, :text, :ix, :index, :align, :prompt
     attr_accessor :moreup, :moredown
     attr_accessor :record, :history
 

@@ -73,7 +73,8 @@ bg             | Background color for the Pane
 border         | Draw border around the Pane (=true) or not (=false), default being false
 scroll         | Whether to indicate more text to be shown above/below the Pane, default is true
 text           | The text/content of the Pane
-ix             | "Index" - the line number at the top of the Pane, starts at 0, the first line of text in the Pane
+ix             | The line number at the top of the Pane, starts at 0, the first line of text in the Pane
+index          | An attribute that can be used to track the selected line/element in the pane
 align          | Text alignment in the Pane: "l" = lefts aligned, "c" = center, "r" = right, with the default "l"
 prompt         | The prompt to print at the beginning of a one-liner Pane used as an input box
 moreup         | Set to true when there is more text above what is shown (top scroll bar i showing)
@@ -248,24 +249,6 @@ mypane.edit
 ... and then try to add some bold text by enclosing it in '*' and italics by enclosing text in '/'. Then press 'ctrl-s' to save your edited text - and then type `mypane.refresh` to see the result.
 
 And - try running the example file `rcurses_example.rb`.
-
-# Clean start and exit for your application
-At the start of your program add these two lines to prevent any accidental
-straggling character residues to appear in the terminal:
-```
-$stdin.raw!
-$stdin.echo = false
-```
-
-To restore the terminal fully after you exit your application, add this:
-```
-at_exit do # Always restore terminal state on quit (or fatal)
-  $stdin.cooked!
-  $stdin.echo = true
-  Rcurses.clear_screen
-  Cursor.show
-end
-```
 
 # Not yet implemented
 Let me know what other features you like to see.
