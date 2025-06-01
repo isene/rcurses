@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.7: Removed the need for user templates on startup/exit. Added attr 'index' to pane
+# Version:    4.8: Bugfix: Removed stray ansi codes
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

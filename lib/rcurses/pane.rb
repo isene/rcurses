@@ -176,8 +176,9 @@ module Rcurses
 
       o_row, o_col = pos
 
-      # Hide cursor and disable auto-wrap (minimal fix)
-      STDOUT.print "\e[?25l\e[?7l"
+      # Hide cursor, disable auto-wrap, reset all SGR and scroll margins
+      # (so stray underline, scroll regions, etc. can’t leak out)
+      STDOUT.print "\e[?25l\e[?7l\e[0m\e[r"
 
       fmt = [@fg.to_s, @bg.to_s].join(',')
 
@@ -242,8 +243,8 @@ module Rcurses
         end
       end
 
-      # Re-enable wrap just before printing the final buffer
-      diff_buf << "\e[#{o_row};#{o_col}H\e[?7h"
+      # restore wrap, then also reset SGR and scroll-region one more time
+      diff_buf << "\e[#{o_row};#{o_col}H\e[?7h\e[0m\e[r"
       print diff_buf
       @prev_frame = new_frame
 
