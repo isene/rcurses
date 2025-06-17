@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.8: Bugfix: Removed stray ansi codes
+# Version:    4.8.1: Bugfix: Fixed ANSI nesting bug
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

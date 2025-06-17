@@ -98,7 +98,15 @@ class String
 
   # Remove stray leading/trailing reset if the string has no other styling
   def clean_ansi
-    gsub(/\A(?:\e\[0m)+/, '').gsub(/\e\[0m\z/, '')
+    # If we have opening ANSI codes without proper closing, just use pure
+    # to avoid unbalanced sequences that can corrupt terminal display
+    temp = gsub(/\A(?:\e\[0m)+/, '').gsub(/\e\[0m\z/, '')
+    # Check if we have unbalanced ANSI sequences (opening codes without closing)
+    if temp =~ /\e\[[\d;]+m/ && temp !~ /\e\[0m\z/
+      pure
+    else
+      temp
+    end
   end
 
   # Truncate the *visible* length to n, but preserve embedded ANSI

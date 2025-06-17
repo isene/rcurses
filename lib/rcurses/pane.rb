@@ -221,11 +221,11 @@ module Rcurses
           hl = pl / 2
           case @align
           when "l"
-            line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
+            line_str = @txt[l].pure.c(fmt) + " ".c(fmt) * pl
           when "r"
-            line_str = " ".c(fmt) * pl + @txt[l].c(fmt)
+            line_str = " ".c(fmt) * pl + @txt[l].pure.c(fmt)
           when "c"
-            line_str = " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
+            line_str = " ".c(fmt) * hl + @txt[l].pure.c(fmt) + " ".c(fmt) * (pl - hl)
           end
         else
           line_str = " ".c(fmt) * @w
