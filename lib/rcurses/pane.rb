@@ -184,7 +184,7 @@ module Rcurses
 
       # Lazy evaluation: If the content or pane width has changed, reinitialize the lazy cache.
       if !defined?(@cached_text) || @cached_text != cont || @cached_w != @w
-        @raw_txt   = cont.split("\n")
+        @raw_txt   = cont.split("\n").map { |line| line.chomp("\r") }
         @lazy_txt  = []   # This will hold the processed (wrapped) lines as needed.
         @lazy_index = 0   # Pointer to the next raw line to process.
         @cached_text = cont.dup
