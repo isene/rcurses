@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.8.3: Bugfix: Text carriege return corner case fix
+# Version:    4.9.3: Reverted to stable 4.8.3 codebase after 4.9.0-4.9.2 color issues
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
