@@ -1,33 +1,4 @@
 module Rcurses
-  # A simple display_width function that approximates how many columns a string occupies.
-  # This is a simplified version that may need adjustments for full Unicode support.
-  def self.display_width(str)
-    width = 0
-    str.each_char do |char|
-      cp = char.ord
-      if cp == 0
-        # NUL – no width
-      elsif cp < 32 || (cp >= 0x7F && cp < 0xA0)
-        # Control characters: no width
-        width += 0
-      # Approximate common wide ranges:
-      elsif (cp >= 0x1100 && cp <= 0x115F) ||
-            cp == 0x2329 || cp == 0x232A ||
-            (cp >= 0x2E80 && cp <= 0xA4CF) ||
-            (cp >= 0xAC00 && cp <= 0xD7A3) ||
-            (cp >= 0xF900 && cp <= 0xFAFF) ||
-            (cp >= 0xFE10 && cp <= 0xFE19) ||
-            (cp >= 0xFE30 && cp <= 0xFE6F) ||
-            (cp >= 0xFF00 && cp <= 0xFF60) ||
-            (cp >= 0xFFE0 && cp <= 0xFFE6)
-        width += 2
-      else
-        width += 1
-      end
-    end
-    width
-  end
-
   class Pane
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
@@ -54,10 +25,16 @@ module Rcurses
       @pos        = 0      # For cursor tracking during editing:
       @record     = false  # Don't record history unless explicitly set to true
       @history    = []     # History array
+      @max_history_size = 100  # Limit history to prevent memory leaks
+      
+      ObjectSpace.define_finalizer(self, self.class.finalizer_proc)
     end
 
     def text=(new_text)
-      (@history << @text) if @record && @text
+      if @record && @text
+        @history << @text
+        @history.shift while @history.size > @max_history_size
+      end
       @text = new_text
     end
 
@@ -65,12 +42,18 @@ module Rcurses
       @prompt = prompt
       @text   = text
       editline
-      (@history << @text) if @record && !@text.empty?
+      if @record && !@text.empty?
+        @history << @text
+        @history.shift while @history.size > @max_history_size
+      end
       @text
     end 
 
     def say(text)
-      (@history << text) if @record && !text.empty?
+      if @record && !text.empty?
+        @history << text
+        @history.shift while @history.size > @max_history_size
+      end
       @text = text
       @ix   = 0
       refresh 
@@ -80,6 +63,22 @@ module Rcurses
       @text = ""
       @ix   = 0
       full_refresh 
+    end
+
+    def cleanup
+      @prev_frame = nil
+      @lazy_txt = nil
+      @raw_txt = nil
+      @cached_text = nil
+      @txt = nil
+      @history.clear if @history
+    end
+
+    def self.finalizer_proc
+      proc do
+        # Cleanup code that doesn't reference instance variables
+        # since the object is already being finalized
+      end
     end
 
     def move(dx, dy)
@@ -160,21 +159,39 @@ module Rcurses
     # Diff-based refresh that minimizes flicker.
     # In this updated version we lazily process only the raw lines required to fill the pane.
     def refresh(cont = @text)
-      @max_h, @max_w = IO.console.winsize
+      begin
+        @max_h, @max_w = IO.console.winsize
+      rescue => e
+        # Fallback to reasonable defaults if terminal size can't be determined
+        @max_h, @max_w = 24, 80
+      end
+
+      # Ensure minimum viable dimensions
+      @max_h = [[@max_h, 3].max, 1000].min  # Between 3 and 1000 rows
+      @max_w = [[@max_w, 10].max, 1000].min  # Between 10 and 1000 columns
+      
+      # Ensure pane dimensions are reasonable
+      @w = [[@w, 1].max, @max_w].min
+      @h = [[@h, 1].max, @max_h].min
 
       if @border
         @w = @max_w - 2 if @w > @max_w - 2
         @h = @max_h - 2 if @h > @max_h - 2
-        @x = 2 if @x < 2; @x = @max_w - @w if @x + @w > @max_w
-        @y = 2 if @y < 2; @y = @max_h - @h if @y + @h > @max_h
+        @x = [[2, @x].max, @max_w - @w].min
+        @y = [[2, @y].max, @max_h - @h].min
       else
         @w = @max_w if @w > @max_w
         @h = @max_h if @h > @max_h
-        @x = 1 if @x < 1; @x = @max_w - @w + 1 if @x + @w > @max_w + 1
-        @y = 1 if @y < 1; @y = @max_h - @h + 1 if @y + @h > @max_h + 1
+        @x = [[1, @x].max, @max_w - @w + 1].min
+        @y = [[1, @y].max, @max_h - @h + 1].min
       end
 
-      o_row, o_col = pos
+      begin
+        o_row, o_col = pos
+      rescue => e
+        # Fallback cursor position
+        o_row, o_col = 1, 1
+      end
 
       # Hide cursor, disable auto-wrap, reset all SGR and scroll margins
       # (so stray underline, scroll regions, etc. can’t leak out)
@@ -184,17 +201,28 @@ module Rcurses
 
       # Lazy evaluation: If the content or pane width has changed, reinitialize the lazy cache.
       if !defined?(@cached_text) || @cached_text != cont || @cached_w != @w
-        @raw_txt   = cont.split("\n").map { |line| line.chomp("\r") }
-        @lazy_txt  = []   # This will hold the processed (wrapped) lines as needed.
-        @lazy_index = 0   # Pointer to the next raw line to process.
-        @cached_text = cont.dup
-        @cached_w = @w
+        begin
+          @raw_txt   = (cont || "").split("\n").map { |line| line.chomp("\r") }
+          @lazy_txt  = []   # This will hold the processed (wrapped) lines as needed.
+          @lazy_index = 0   # Pointer to the next raw line to process.
+          @cached_text = (cont || "").dup
+          @cached_w = @w
+        rescue => e
+          # Fallback if content processing fails
+          @raw_txt = [""]
+          @lazy_txt = []
+          @lazy_index = 0
+          @cached_text = ""
+          @cached_w = @w
+        end
       end
 
       content_rows = @h
       # Ensure we have processed enough lines for the current scroll position + visible area.
-      required_lines = @ix + content_rows
-      while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size
+      required_lines = @ix + content_rows + 50  # Buffer a bit for smoother scrolling
+      max_cache_size = 1000  # Prevent excessive memory usage
+      
+      while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size && @lazy_txt.size < max_cache_size
         raw_line = @raw_txt[@lazy_index]
         # If the raw line is short, no wrapping is needed.
         if raw_line.respond_to?(:pure) && Rcurses.display_width(raw_line.pure) < @w
@@ -205,6 +233,10 @@ module Rcurses
         @lazy_txt.concat(processed)
         @lazy_index += 1
       end
+      
+      # Simplified: just limit max processing, don't trim existing cache
+      # This avoids expensive array operations during scrolling
+      
       @txt = @lazy_txt
 
       @ix = @txt.length - 1 if @ix > @txt.length - 1
@@ -245,7 +277,15 @@ module Rcurses
 
       # restore wrap, then also reset SGR and scroll-region one more time
       diff_buf << "\e[#{o_row};#{o_col}H\e[?7h\e[0m\e[r"
-      print diff_buf
+      begin
+        print diff_buf
+      rescue => e
+        # If printing fails, at least try to restore terminal state
+        begin
+          print "\e[0m\e[?25h\e[?7h"
+        rescue
+        end
+      end
       @prev_frame = new_frame
 
       # Draw scroll markers after printing the frame.
@@ -597,65 +637,78 @@ module Rcurses
     end
 
     def split_line_with_ansi(line, w)
-      open_sequences = {
-        "\e[1m" => "\e[22m",
-        "\e[3m" => "\e[23m",
-        "\e[4m" => "\e[24m",
-        "\e[5m" => "\e[25m",
-        "\e[7m" => "\e[27m"
-      }
-      close_sequences = open_sequences.values + ["\e[0m"]
-      ansi_regex = /\e\[[0-9;]*m/
-      result = []
-      tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
-      current_line = ''
-      current_line_length = 0
-      active_sequences = []
-      tokens.each do |token|
-        if token.match?(ansi_regex)
-          current_line << token
-          if close_sequences.include?(token)
-            if token == "\e[0m"
-              active_sequences.clear
+      begin
+        return [""] if line.nil? || w <= 0
+        
+        open_sequences = {
+          "\e[1m" => "\e[22m",
+          "\e[3m" => "\e[23m",
+          "\e[4m" => "\e[24m",
+          "\e[5m" => "\e[25m",
+          "\e[7m" => "\e[27m"
+        }
+        close_sequences = open_sequences.values + ["\e[0m"]
+        ansi_regex = /\e\[[0-9;]*m/
+        result = []
+        tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
+        current_line = ''
+        current_line_length = 0
+        active_sequences = []
+        
+        tokens.each do |token|
+          if token.match?(ansi_regex)
+            current_line << token
+            if close_sequences.include?(token)
+              if token == "\e[0m"
+                active_sequences.clear
+              else
+                corresponding_open = open_sequences.key(token)
+                active_sequences.delete(corresponding_open)
+              end
             else
-              corresponding_open = open_sequences.key(token)
-              active_sequences.delete(corresponding_open)
+              active_sequences << token
             end
           else
-            active_sequences << token
-          end
-        else
-          words = token.scan(/\s+|\S+/)
-          words.each do |word|
-            word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
-            if current_line_length + word_length <= w
-              current_line << word
-              current_line_length += word_length
-            else
-              if current_line_length > 0
-                result << current_line
-                current_line = active_sequences.join
-                current_line_length = 0
-              end
-              while word_length > w
-                part = word[0, w]
-                current_line << part
-                result << current_line
-                word = word[w..-1]
+            words = token.scan(/\s+|\S+/)
+            words.each do |word|
+              begin
                 word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
-                current_line = active_sequences.join
-                current_line_length = 0
-              end
-              if word_length > 0
-                current_line << word
-                current_line_length += word_length
+                if current_line_length + word_length <= w
+                  current_line << word
+                  current_line_length += word_length
+                else
+                  if current_line_length > 0
+                    result << current_line
+                    current_line = active_sequences.join
+                    current_line_length = 0
+                  end
+                  while word_length > w
+                    part = word[0, [w, word.length].min]
+                    current_line << part
+                    result << current_line
+                    word = word[[w, word.length].min..-1] || ""
+                    word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
+                    current_line = active_sequences.join
+                    current_line_length = 0
+                  end
+                  if word_length > 0
+                    current_line << word
+                    current_line_length += word_length
+                  end
+                end
+              rescue => e
+                # Skip problematic word but continue
+                next
               end
             end
           end
         end
+        result << current_line unless current_line.empty?
+        result.empty? ? [""] : result
+      rescue => e
+        # Complete fallback
+        return [""]
       end
-      result << current_line unless current_line.empty?
-      result
     end
   end
 end
