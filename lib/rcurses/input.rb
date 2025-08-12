@@ -8,6 +8,7 @@ module Rcurses
         rescue Timeout::Error
           return nil
         end
+        
 
         # 2) If it's ESC, grab any quick trailing bytes
         seq = c
@@ -19,6 +20,8 @@ module Rcurses
             end
           end
         end
+        
+        
 
         # 3) Single ESC alone
         return "ESC" if seq == "\e"
@@ -37,6 +40,11 @@ module Rcurses
         # 6) CSI style shiftâarrows (e.g. ESC [1;2A )
         if m = seq.match(/\A\e\[\d+;2([ABCD])\z/)
           return { 'A' => "S-UP", 'B' => "S-DOWN", 'C' => "S-RIGHT", 'D' => "S-LEFT" }[m[1]]
+        end
+        
+        # 6b) CSI style ctrl-arrows (e.g. ESC [1;5A )
+        if m = seq.match(/\A\e\[\d+;5([ABCD])\z/)
+          return { 'A' => "C-UP", 'B' => "C-DOWN", 'C' => "C-RIGHT", 'D' => "C-LEFT" }[m[1]]
         end
 
         # 7) Plain arrows
@@ -66,13 +74,17 @@ module Rcurses
                 end
         end
 
-        # 9) SS3 function keys F1-F4
+        # 9) SS3 function keys F1-F4 and Ctrl+arrows
         if seq.start_with?("\eO") && seq.length == 3
           return case seq[2]
                 when 'P' then "F1"
                 when 'Q' then "F2"
                 when 'R' then "F3"
                 when 'S' then "F4"
+                when 'a' then "C-UP"      # Some terminals send ESC O a for Ctrl+Up
+                when 'b' then "C-DOWN"    # Some terminals send ESC O b for Ctrl+Down
+                when 'c' then "C-RIGHT"   # Some terminals send ESC O c for Ctrl+Right
+                when 'd' then "C-LEFT"    # Some terminals send ESC O d for Ctrl+Left
                 else ""
                 end
         end
