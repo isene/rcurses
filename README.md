@@ -248,7 +248,7 @@ Try this in `irb`:
 ```
 require 'rcurses'
 @max_h, @max_w = IO.console.winsize
-mypane = Pane.new(@max_w/2, 30, 30, 10, 19, 229)
+mypane = Rcurses::Pane.new(@max_w/2, 30, 30, 10, 19, 229)
 mypane.border = true
 mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
 mypane.refresh
