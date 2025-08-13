@@ -258,6 +258,15 @@ mypane.edit
 
 And - try running the example file `rcurses_example.rb`.
 
+# Version History
+
+## v5.1.2 (2025-08-13)
+- Added comprehensive scrolling best practices documentation (SCROLLING_BEST_PRACTICES.md)
+- Documentation improvements for developers implementing scrollable panes
+
+## v5.1.1
+- Bug fixes and stability improvements
+
 # Not yet implemented
 Let me know what other features you like to see.
 
