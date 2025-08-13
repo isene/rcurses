@@ -9,7 +9,7 @@ module Rcurses
     attr_accessor :record, :history
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
-      @max_h, @max_w = IO.console.winsize
+      @max_h, @max_w = IO.console ? IO.console.winsize : [24, 80]
       @x          = x
       @y          = y
       @w          = w
@@ -198,6 +198,10 @@ module Rcurses
       STDOUT.print "\e[?25l\e[?7l\e[0m\e[r"
 
       fmt = [@fg.to_s, @bg.to_s].join(',')
+      
+      # Skip color application if fg and bg are both nil or empty
+      @skip_colors = (@fg.nil? && @bg.nil?) || (fmt == ",")
+      
 
       # Lazy evaluation: If the content or pane width has changed, reinitialize the lazy cache.
       if !defined?(@cached_text) || @cached_text != cont || @cached_w != @w
@@ -251,16 +255,31 @@ module Rcurses
           pl = @w - Rcurses.display_width(@txt[l].pure)
           pl = 0 if pl < 0
           hl = pl / 2
-          case @align
-          when "l"
-            line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
-          when "r"
-            line_str = " ".c(fmt) * pl + @txt[l].c(fmt)
-          when "c"
-            line_str = " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
+          # Skip color application if pane has no colors set or text has ANY ANSI codes
+          if @skip_colors || @txt[l].include?("\e[")
+            # Don't apply pane colors - text already has ANSI sequences
+            case @align
+            when "l"
+              line_str = @txt[l] + " " * pl
+            when "r"
+              line_str = " " * pl + @txt[l]
+            when "c"
+              line_str = " " * hl + @txt[l] + " " * (pl - hl)
+            end
+          else
+            # Apply pane colors normally
+            case @align
+            when "l"
+              line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
+            when "r"
+              line_str = " ".c(fmt) * pl + @txt[l].c(fmt)
+            when "c"
+              line_str = " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
+            end
           end
         else
-          line_str = " ".c(fmt) * @w
+          # Empty line - only apply colors if pane has them
+          line_str = @skip_colors ? " " * @w : " ".c(fmt) * @w
         end
 
         new_frame << line_str
@@ -278,6 +297,16 @@ module Rcurses
       # restore wrap, then also reset SGR and scroll-region one more time
       diff_buf << "\e[#{o_row};#{o_col}H\e[?7h\e[0m\e[r"
       begin
+        # Debug: check what's actually being printed
+        if diff_buf.include?("Purpose") && diff_buf.include?("[38;5;")
+          File.open("/tmp/rcurses_debug.log", "a") do |f|
+            f.puts "=== PRINT DEBUG ==="
+            f.puts "diff_buf sample: #{diff_buf[0..200].inspect}"
+            f.puts "Has escape byte 27: #{diff_buf.bytes.include?(27)}"
+            f.puts "Escape count: #{diff_buf.bytes.count(27)}"
+          end
+        end
+        
         print diff_buf
       rescue => e
         # If printing fails, at least try to restore terminal state
@@ -640,34 +669,94 @@ module Rcurses
       begin
         return [""] if line.nil? || w <= 0
         
-        open_sequences = {
-          "\e[1m" => "\e[22m",
-          "\e[3m" => "\e[23m",
-          "\e[4m" => "\e[24m",
-          "\e[5m" => "\e[25m",
-          "\e[7m" => "\e[27m"
-        }
-        close_sequences = open_sequences.values + ["\e[0m"]
         ansi_regex = /\e\[[0-9;]*m/
         result = []
         tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
         current_line = ''
         current_line_length = 0
-        active_sequences = []
+        
+        # Track SGR state properly
+        sgr_state = {
+          bold: false,      # 1/22
+          italic: false,    # 3/23  
+          underline: false, # 4/24
+          blink: false,     # 5/25
+          reverse: false,   # 7/27
+          fg_color: nil,    # 38/39 (nil means default)
+          bg_color: nil     # 48/49 (nil means default)
+        }
+        
+        # Helper to parse SGR parameters
+        parse_sgr = lambda do |sequence|
+          return unless sequence =~ /\e\[([0-9;]*)m/
+          param_str = $1
+          params = param_str.empty? ? [0] : param_str.split(';').map(&:to_i)
+          i = 0
+          while i < params.length
+            case params[i]
+            when 0  # Reset all
+              sgr_state[:bold] = false
+              sgr_state[:italic] = false
+              sgr_state[:underline] = false
+              sgr_state[:blink] = false
+              sgr_state[:reverse] = false
+              sgr_state[:fg_color] = nil
+              sgr_state[:bg_color] = nil
+            when 1  then sgr_state[:bold] = true
+            when 3  then sgr_state[:italic] = true
+            when 4  then sgr_state[:underline] = true
+            when 5  then sgr_state[:blink] = true
+            when 7  then sgr_state[:reverse] = true
+            when 22 then sgr_state[:bold] = false
+            when 23 then sgr_state[:italic] = false
+            when 24 then sgr_state[:underline] = false
+            when 25 then sgr_state[:blink] = false
+            when 27 then sgr_state[:reverse] = false
+            when 38 # Foreground color
+              if params[i+1] == 5 && params[i+2]  # 256 color
+                sgr_state[:fg_color] = "38;5;#{params[i+2]}"
+                i += 2
+              elsif params[i+1] == 2 && params[i+4]  # RGB color
+                sgr_state[:fg_color] = "38;2;#{params[i+2]};#{params[i+3]};#{params[i+4]}"
+                i += 4
+              end
+            when 39 then sgr_state[:fg_color] = nil  # Default foreground
+            when 48 # Background color
+              if params[i+1] == 5 && params[i+2]  # 256 color
+                sgr_state[:bg_color] = "48;5;#{params[i+2]}"
+                i += 2
+              elsif params[i+1] == 2 && params[i+4]  # RGB color
+                sgr_state[:bg_color] = "48;2;#{params[i+2]};#{params[i+3]};#{params[i+4]}"
+                i += 4
+              end
+            when 49 then sgr_state[:bg_color] = nil  # Default background
+            # Handle legacy 8-color codes (30-37, 40-47, 90-97, 100-107)
+            when 30..37 then sgr_state[:fg_color] = params[i].to_s
+            when 40..47 then sgr_state[:bg_color] = params[i].to_s
+            when 90..97 then sgr_state[:fg_color] = params[i].to_s
+            when 100..107 then sgr_state[:bg_color] = params[i].to_s
+            end
+            i += 1
+          end
+        end
+        
+        # Helper to reconstruct SGR sequence from state
+        build_sgr = lambda do
+          codes = []
+          codes << "1" if sgr_state[:bold]
+          codes << "3" if sgr_state[:italic]
+          codes << "4" if sgr_state[:underline]
+          codes << "5" if sgr_state[:blink]
+          codes << "7" if sgr_state[:reverse]
+          codes << sgr_state[:fg_color] if sgr_state[:fg_color]
+          codes << sgr_state[:bg_color] if sgr_state[:bg_color]
+          codes.empty? ? "" : "\e[#{codes.join(';')}m"
+        end
         
         tokens.each do |token|
           if token.match?(ansi_regex)
             current_line << token
-            if close_sequences.include?(token)
-              if token == "\e[0m"
-                active_sequences.clear
-              else
-                corresponding_open = open_sequences.key(token)
-                active_sequences.delete(corresponding_open)
-              end
-            else
-              active_sequences << token
-            end
+            parse_sgr.call(token)
           else
             words = token.scan(/\s+|\S+/)
             words.each do |word|
@@ -679,7 +768,8 @@ module Rcurses
                 else
                   if current_line_length > 0
                     result << current_line
-                    current_line = active_sequences.join
+                    # Start new line with current SGR state
+                    current_line = build_sgr.call
                     current_line_length = 0
                   end
                   while word_length > w
@@ -688,7 +778,8 @@ module Rcurses
                     result << current_line
                     word = word[[w, word.length].min..-1] || ""
                     word_length = Rcurses.display_width(word.gsub(ansi_regex, ''))
-                    current_line = active_sequences.join
+                    # Start new line with current SGR state
+                    current_line = build_sgr.call
                     current_line_length = 0
                   end
                   if word_length > 0
