@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    5.1.5: Improved error handling - preserves screen content on crash
+# Version:    5.1.6: Ruby 3.4+ compatibility - handle potential raw!/cooked! blocking
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -26,8 +26,33 @@ module Rcurses
       return unless $stdin.tty?
 
       # enter raw mode, disable echo
-      $stdin.raw!
-      $stdin.echo = false
+      # Ruby 3.4+ compatibility: Handle potential blocking in raw!
+      begin
+        if RUBY_VERSION >= "3.4.0"
+          # Flush outputs before changing terminal mode (Ruby 3.4+ requirement)
+          $stdout.flush if $stdout.respond_to?(:flush)
+          $stderr.flush if $stderr.respond_to?(:flush)
+          
+          # Use timeout to detect hanging raw! call
+          begin
+            Timeout::timeout(0.5) do
+              $stdin.raw!
+              $stdin.echo = false
+            end
+          rescue Timeout::Error
+            # Fallback to stty for Ruby 3.4+ if raw! hangs
+            system("stty raw -echo 2>/dev/null")
+            @using_stty = true
+          end
+        else
+          # Original code for Ruby < 3.4
+          $stdin.raw!
+          $stdin.echo = false
+        end
+      rescue Errno::ENOTTY, Errno::ENODEV
+        # Not a real terminal
+        return
+      end
 
       # ensure cleanup on normal exit
       at_exit do
@@ -52,8 +77,30 @@ module Rcurses
       return if @cleaned_up
 
       # Restore terminal to normal mode
-      $stdin.cooked!
-      $stdin.echo = true
+      begin
+        if @using_stty
+          # If we used stty for init, use it for cleanup
+          system("stty sane 2>/dev/null")
+        elsif RUBY_VERSION >= "3.4.0"
+          # Ruby 3.4+ with timeout protection
+          begin
+            Timeout::timeout(0.5) do
+              $stdin.cooked!
+              $stdin.echo = true
+            end
+          rescue Timeout::Error
+            # Fallback if cooked! hangs
+            system("stty sane 2>/dev/null")
+          end
+        else
+          # Original code for Ruby < 3.4
+          $stdin.cooked!
+          $stdin.echo = true
+        end
+      rescue => e
+        # Last resort fallback
+        system("stty sane 2>/dev/null")
+      end
       
       # Only clear screen if there's no error to display
       # This preserves the error context on screen
