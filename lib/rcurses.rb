@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    4.9.4: Added scrolling best practices documentation
+# Version:    5.1.4: Added error handling with terminal restoration
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -30,7 +30,13 @@ module Rcurses
       $stdin.echo = false
 
       # ensure cleanup on normal exit
-      at_exit { cleanup! }
+      at_exit do
+        # Capture any unhandled exception
+        if $! && !$!.is_a?(SystemExit) && !$!.is_a?(Interrupt)
+          @error_to_display = $!
+        end
+        cleanup!
+      end
 
       # ensure cleanup on signals
       %w[INT TERM].each do |sig|
@@ -51,6 +57,46 @@ module Rcurses
       Cursor.show
 
       @cleaned_up = true
+      
+      # Display any captured error after terminal is restored
+      if @error_to_display
+        display_error(@error_to_display)
+      end
+    end
+    
+    # Private: Display error information after terminal cleanup
+    def display_error(error)
+      # Only display if we're in a TTY and not in a test environment
+      return unless $stdout.tty?
+      
+      puts "\n\e[31m═══ Application Error ═══\e[0m"
+      puts "\e[33m#{error.class}:\e[0m #{error.message}"
+      
+      # Show backtrace if debug mode is enabled
+      if ENV['DEBUG'] || ENV['RCURSES_DEBUG']
+        puts "\n\e[90mBacktrace:\e[0m"
+        error.backtrace.first(10).each do |line|
+          puts "  \e[90m#{line}\e[0m"
+        end
+      else
+        puts "\e[90m(Set DEBUG=1 or RCURSES_DEBUG=1 for backtrace)\e[0m"
+      end
+      
+      puts "\e[31m═══════════════════════\e[0m\n"
+    end
+    
+    # Public: Run a block with proper error handling and terminal cleanup
+    # This ensures errors are displayed after terminal is restored
+    def run(&block)
+      init!
+      begin
+        yield
+      rescue StandardError => e
+        @error_to_display = e
+        raise
+      ensure
+        # cleanup! will be called by at_exit handler
+      end
     end
   end
 
