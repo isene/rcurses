@@ -255,9 +255,12 @@ module Rcurses
           pl = @w - Rcurses.display_width(@txt[l].pure)
           pl = 0 if pl < 0
           hl = pl / 2
-          # Skip color application if pane has no colors set or text has ANY ANSI codes
-          if @skip_colors || @txt[l].include?("\e[")
-            # Don't apply pane colors - text already has ANSI sequences
+          
+          # Check if text has ANSI background colors (48 or 4x codes)
+          has_bg_color = @txt[l] =~ /\e\[(?:\d+;)*4[0-9](?:;\d+)*m/ || @txt[l] =~ /\e\[(?:\d+;)*48(?:;\d+)*m/
+          
+          if @skip_colors || (@txt[l].include?("\e[") && !@bg)
+            # No pane colors to apply, or text has ANSI but pane has no bg
             case @align
             when "l"
               line_str = @txt[l] + " " * pl
@@ -266,8 +269,28 @@ module Rcurses
             when "c"
               line_str = " " * hl + @txt[l] + " " * (pl - hl)
             end
+          elsif @txt[l].include?("\e[") && @bg && !has_bg_color
+            # Text has ANSI codes but no bg color - apply pane fg and bg to text and padding
+            case @align
+            when "l"
+              line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
+            when "r"
+              line_str = " ".c(fmt) * pl + @txt[l].c(fmt)
+            when "c"
+              line_str = " ".c(fmt) * hl + @txt[l].c(fmt) + " ".c(fmt) * (pl - hl)
+            end
+          elsif @txt[l].include?("\e[") && has_bg_color
+            # Text has its own bg color - preserve it, only apply pane bg to padding
+            case @align
+            when "l"
+              line_str = @txt[l] + " ".c(fmt) * pl
+            when "r"
+              line_str = " ".c(fmt) * pl + @txt[l]
+            when "c"
+              line_str = " ".c(fmt) * hl + @txt[l] + " ".c(fmt) * (pl - hl)
+            end
           else
-            # Apply pane colors normally
+            # No ANSI codes - apply pane colors normally
             case @align
             when "l"
               line_str = @txt[l].c(fmt) + " ".c(fmt) * pl
@@ -278,7 +301,7 @@ module Rcurses
             end
           end
         else
-          # Empty line - only apply colors if pane has them
+          # Empty line
           line_str = @skip_colors ? " " * @w : " ".c(fmt) * @w
         end
 
