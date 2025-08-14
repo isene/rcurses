@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    5.1.4: Added error handling with terminal restoration
+# Version:    5.1.5: Improved error handling - preserves screen content on crash
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -51,9 +51,20 @@ module Rcurses
     def cleanup!
       return if @cleaned_up
 
+      # Restore terminal to normal mode
       $stdin.cooked!
       $stdin.echo = true
-      Rcurses.clear_screen
+      
+      # Only clear screen if there's no error to display
+      # This preserves the error context on screen
+      if @error_to_display.nil?
+        Rcurses.clear_screen
+      else
+        # Just move cursor to bottom of screen without clearing
+        print "\e[999;1H"  # Move to bottom-left
+        print "\e[K"       # Clear current line
+      end
+      
       Cursor.show
 
       @cleaned_up = true
@@ -69,20 +80,25 @@ module Rcurses
       # Only display if we're in a TTY and not in a test environment
       return unless $stdout.tty?
       
-      puts "\n\e[31m═══ Application Error ═══\e[0m"
-      puts "\e[33m#{error.class}:\e[0m #{error.message}"
+      # Add some spacing and make the error very visible
+      puts "\n\n\e[41;37m                    APPLICATION CRASHED                    \e[0m"
+      puts "\e[31m═══════════════════════════════════════════════════════════\e[0m"
+      puts "\e[33mError Type:\e[0m #{error.class}"
+      puts "\e[33mMessage:\e[0m    #{error.message}"
       
       # Show backtrace if debug mode is enabled
       if ENV['DEBUG'] || ENV['RCURSES_DEBUG']
-        puts "\n\e[90mBacktrace:\e[0m"
-        error.backtrace.first(10).each do |line|
+        puts "\n\e[33mBacktrace:\e[0m"
+        error.backtrace.first(15).each do |line|
           puts "  \e[90m#{line}\e[0m"
         end
       else
-        puts "\e[90m(Set DEBUG=1 or RCURSES_DEBUG=1 for backtrace)\e[0m"
+        puts "\n\e[90mTip: Set DEBUG=1 or RCURSES_DEBUG=1 to see the full backtrace\e[0m"
       end
       
-      puts "\e[31m═══════════════════════\e[0m\n"
+      puts "\e[31m═══════════════════════════════════════════════════════════\e[0m"
+      puts "\e[33mNote:\e[0m The application state above shows where the error occurred."
+      puts ""
     end
     
     # Public: Run a block with proper error handling and terminal cleanup
