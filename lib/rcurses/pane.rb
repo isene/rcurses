@@ -223,10 +223,17 @@ module Rcurses
 
       content_rows = @h
       # Ensure we have processed enough lines for the current scroll position + visible area.
-      required_lines = @ix + content_rows + 50  # Buffer a bit for smoother scrolling
-      max_cache_size = 1000  # Prevent excessive memory usage
+      # Dynamically process more lines as needed when scrolling through large lists
+      required_lines = @ix + content_rows + 100  # Larger buffer for smoother scrolling
       
-      while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size && @lazy_txt.size < max_cache_size
+      # Safety limit to prevent excessive memory usage (but still very generous)
+      max_allowed = 100000  # Allow up to 100k lines which should handle any reasonable directory
+      
+      # Process lines on demand as we scroll
+      while @lazy_txt.size < required_lines && @lazy_index < @raw_txt.size
+        # Safety check to prevent runaway memory usage
+        break if @lazy_txt.size > max_allowed
+        
         raw_line = @raw_txt[@lazy_index]
         # If the raw line is short, no wrapping is needed.
         if raw_line.respond_to?(:pure) && Rcurses.display_width(raw_line.pure) < @w
