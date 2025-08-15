@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name          = 'rcurses'
-  s.version       = '5.1.6'
+  s.version       = '6.0.0'
   s.licenses      = ['Unlicense']
   s.summary       = "rcurses - An alternative curses library written in pure Ruby"
-  s.description   = "Create curses applications for the terminal easier than ever. Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. 5.0.0: Major improvements - memory leak fixes, terminal state protection, Unicode support, and enhanced error handling while maintaining full backward compatibility and 4.8.3 performance."
+  s.description   = "Create curses applications for the terminal easier than ever. Create panes (with the colors and(or border), manipulate the panes and add content. Dress up text (in panes or anywhere in the terminal) in bold, italic, underline, reverse color, blink and in any 256 terminal colors for foreground and background. Use a simple editor to let users edit text in panes. Left, right or center align text in panes. Cursor movement around the terminal. VERSION 6.0.0 BREAKING CHANGE: Apps must now explicitly call Rcurses.init! - auto-initialization has been removed for Ruby 3.4+ compatibility."
   s.authors       = ["Geir Isene"]
   s.email         = 'g@isene.com'
   s.homepage      = 'https://isene.com/'

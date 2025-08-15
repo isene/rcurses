@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    5.1.6: Ruby 3.4+ compatibility - handle potential raw!/cooked! blocking
+# Version:    6.0.0: Breaking change - no auto-init, apps must call Rcurses.init!
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -163,8 +163,9 @@ module Rcurses
     end
   end
 
-  # Kick off initialization as soon as the library is required.
-  init!
+  # BREAKING CHANGE in 6.0.0: No more auto-initialization
+  # All apps must now explicitly call Rcurses.init! when ready to use rcurses
+  # This ensures compatibility with Ruby 3.4+ and gives apps better control
 end
 
 # vim: set sw=2 sts=2 et filetype=ruby fdn=2 fcs=fold\:\ :
