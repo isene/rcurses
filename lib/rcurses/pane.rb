@@ -135,15 +135,29 @@ module Rcurses
       bottom_row = @y + @h
 
       if @border
+        # Determine border characters based on environment
+        if ENV['RCURSES_BORDERS'] == 'ascii'
+          tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
+        else
+          # Check if locale supports UTF-8
+          locale = ENV['LANG'] || ENV['LC_ALL'] || ENV['LC_CTYPE'] || ''
+          if locale.downcase.include?('utf-8') || locale.downcase.include?('utf8')
+            tl, tr, bl, br, h, v = '┌', '┐', '└', '┘', '─', '│'
+          else
+            # Fallback to ASCII for non-UTF-8 locales
+            tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
+          end
+        end
+        
         fmt = [@fg.to_s, @bg.to_s].join(',')
-        top = ("┌" + "─" * @w + "┐").c(fmt)
+        top = (tl + h * @w + tr).c(fmt)
         STDOUT.print "\e[#{top_row};#{left_col}H" + top
         (0...@h).each do |i|
           row = @y + i
-          STDOUT.print "\e[#{row};#{left_col}H"  + "│".c(fmt)
-          STDOUT.print "\e[#{row};#{right_col}H" + "│".c(fmt)
+          STDOUT.print "\e[#{row};#{left_col}H"  + v.c(fmt)
+          STDOUT.print "\e[#{row};#{right_col}H" + v.c(fmt)
         end
-        bottom = ("└" + "─" * @w + "┘").c(fmt)
+        bottom = (bl + h * @w + br).c(fmt)
         STDOUT.print "\e[#{bottom_row};#{left_col}H" + bottom
       else
         STDOUT.print "\e[#{top_row};#{left_col}H" + " " * (@w + 2)
@@ -361,15 +375,29 @@ module Rcurses
       end
 
       if @border
+        # Determine border characters based on environment
+        if ENV['RCURSES_BORDERS'] == 'ascii'
+          tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
+        else
+          # Check if locale supports UTF-8
+          locale = ENV['LANG'] || ENV['LC_ALL'] || ENV['LC_CTYPE'] || ''
+          if locale.downcase.include?('utf-8') || locale.downcase.include?('utf8')
+            tl, tr, bl, br, h, v = '┌', '┐', '└', '┘', '─', '│'
+          else
+            # Fallback to ASCII for non-UTF-8 locales
+            tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
+          end
+        end
+        
         # top
-        print "\e[#{@y - 1};#{@x - 1}H" + ("┌" + "─" * @w + "┐").c(fmt)
+        print "\e[#{@y - 1};#{@x - 1}H" + (tl + h * @w + tr).c(fmt)
         # sides
         (0...@h).each do |i|
-          print "\e[#{@y + i};#{@x - 1}H"  + "│".c(fmt)
-          print "\e[#{@y + i};#{@x + @w}H" + "│".c(fmt)
+          print "\e[#{@y + i};#{@x - 1}H"  + v.c(fmt)
+          print "\e[#{@y + i};#{@x + @w}H" + v.c(fmt)
         end
         # bottom
-        print "\e[#{@y + @h};#{@x - 1}H" + ("└" + "─" * @w + "┘").c(fmt)
+        print "\e[#{@y + @h};#{@x - 1}H" + (bl + h * @w + br).c(fmt)
       end
 
       new_frame.join("\n")
