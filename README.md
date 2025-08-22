@@ -242,6 +242,105 @@ end
 You can also pass a timeout to `getchr` with `getchr(time)` to wait for `time` number of seconds and returning `nil` if the user does not press a key.
 
 
+# Proper Initialization and Common Pitfalls
+
+## Critical: Proper Application Initialization
+
+When building TUI applications with rcurses, follow this exact initialization pattern to avoid blank/frozen screens:
+
+```ruby
+#!/usr/bin/env ruby
+require 'rcurses'
+require 'io/wait'  # CRITICAL for stdin flush
+
+class MyApp
+  include Rcurses
+  include Rcurses::Input
+  
+  def run
+    # 1. Initialize rcurses FIRST
+    Rcurses.init!
+    
+    # 2. Get terminal size
+    @h, @w = IO.console.winsize
+    
+    # 3. Create your panes
+    @pane_top = Pane.new(1, 1, @w, 1, 255, 235)
+    @pane_left = Pane.new(1, 3, @w/3, @h-4, 15, 0)
+    @pane_right = Pane.new(@w/3+2, 3, @w-@w/3-2, @h-4, 255, 0)
+    
+    # 4. Load initial data and render
+    load_data
+    render_all
+    
+    # 5. CRITICAL: Flush stdin before main loop
+    # This prevents cursor position requests from blocking initial render
+    $stdin.getc while $stdin.wait_readable(0)
+    
+    # 6. Main loop pattern
+    loop do
+      render_all           # Render first
+      chr = getchr         # Then get input
+      handle_input(chr)    # Then handle it
+      break if chr == 'q'
+    end
+  ensure
+    # Clean up
+    Cursor.show
+  end
+  
+  def render_all
+    # Use text= and refresh, NOT say for initial renders
+    @pane_top.text = "My Application"
+    @pane_top.refresh
+    
+    @pane_left.text = @content
+    @pane_left.refresh
+  end
+end
+```
+
+## Common Pitfalls and Solutions
+
+### 1. Blank Panes on Startup
+**Problem:** All panes appear blank until user input.  
+**Cause:** Terminal sends cursor position request (`\e[6n`) that blocks rendering.  
+**Solution:** Always flush stdin before main loop: `$stdin.getc while $stdin.wait_readable(0)`
+
+### 2. Using `say` vs `text=` and `refresh`
+**When to use `say`:**
+- For status messages and one-time updates
+- When you want to reset scroll position (ix = 0)
+
+**When to use `text=` and `refresh`:**
+- In render loops where you control scrolling
+- When you need to preserve scroll position
+
+```ruby
+# For render loops - preserves scroll
+@pane.text = content
+@pane.ix = saved_scroll_position  # Maintain scroll
+@pane.refresh
+
+# For status messages - resets scroll
+@pane.say("Processing...")
+```
+
+### 3. Double Rendering
+**Problem:** Calling both `say` and `refresh` causes double rendering.  
+**Solution:** `say` already calls refresh internally - don't call refresh after say.
+
+### 4. Missing require 'io/wait'
+**Problem:** `wait_readable` method not found.  
+**Solution:** Always include `require 'io/wait'` for stdin flush.
+
+## Reference Applications
+
+Study these applications for best practices:
+- [RTFM](https://github.com/isene/RTFM) - File manager with complex pane management
+- [GiTerm](https://github.com/isene/GiTerm) - Git interface with dynamic content
+- [T-REX](https://github.com/isene/T-REX) - Calculator with simpler UI
+
 # Example
 
 Try this in `irb`:
