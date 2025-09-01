@@ -10,13 +10,16 @@ Here's a somewhat simple example of a TUI program using rcurses: The [T-REX](htt
 
 And here's a much more involved example: The [RTFM](https://github.com/isene/RTFM) terminal file manager.
 
-# NOTE: Version 5.0.0 brings major improvements!
-- **Memory leak fixes** - Better memory management and history limits
-- **Terminal state protection** - Proper terminal restoration on crashes
-- **Enhanced Unicode support** - Better handling of CJK characters and emojis
-- **Error handling improvements** - More robust operation in edge cases
-- **Performance optimizations** - Maintains the speed of version 4.8.3
+# NOTE: Version 6.1.0 adds safe ANSI code handling!
+- **Safe regex substitution** - New `safe_gsub` methods prevent ANSI code corruption
+- **ANSI detection** - Check if strings contain ANSI codes with `has_ansi?`
+- **Visible length calculation** - Get true text length with `visible_length`
+- **Conditional coloring** - Apply colors only when needed with `safe_fg`/`safe_bg`
 - **Full backward compatibility** - All existing applications work unchanged
+
+Previous major improvements in 5.0.0:
+- Memory leak fixes, terminal state protection, enhanced Unicode support
+- Error handling improvements and performance optimizations
 
 Version 4.5 gave full RGB support in addition to 256-colors. Just write a color as a string - e.g. `"d533e0"` for a hexadecimal RGB color (or use the terminal 256 colors by supplying an integer in the range 0-255)
 
@@ -129,6 +132,12 @@ pure           | Strip text of any "dressing" (example: with `text = "TEST".b`, 
 clean_ansi     | Strip seemingly uncolored strings of ansi code (those that are enclosed in "\e[0m"
 shorten(n)     | Shorten the pure version of the string to 'n' characters, preserving any ANSI coding
 inject("chars",pos) | Inject "chars" at position 'pos' in the pure version of the string (if 'pos' is '-1', then append at end). Preserves any ANSI code
+safe_gsub(pattern, replacement) | Apply regex substitution without corrupting existing ANSI codes (example: `colored_text.safe_gsub(/\[([^\]]*)\]/) { |m| m.fg(46) }`)
+safe_gsub!(pattern, replacement) | In-place version of safe_gsub
+has_ansi?      | Check if string contains ANSI escape sequences (returns true/false)
+visible_length | Get the visible length of text (excluding ANSI codes)
+safe_fg(fg)    | Apply foreground color only if string doesn't already have ANSI codes
+safe_bg(bg)    | Apply background color only if string doesn't already have ANSI codes
 
 PS: Blink does not work in conjunction with setting a background color in urxvt. It does work in gnome-terminal. But the overall performance in urxvt as orders of magnitude better than gnome-terminal.
 
