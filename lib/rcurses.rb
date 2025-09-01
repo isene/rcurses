@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    6.0.0: Breaking change - no auto-init, apps must call Rcurses.init!
+# Version:    6.1.0: Added safe_gsub methods to prevent ANSI code corruption
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling

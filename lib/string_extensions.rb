@@ -156,5 +156,55 @@ class String
 
     out
   end
+  
+  # Safely apply regex replacements without corrupting ANSI sequences
+  # This method temporarily removes ANSI codes, applies the regex, then restores them
+  def safe_gsub(pattern, replacement = nil, &block)
+    # Store all ANSI sequences and replace with placeholders
+    ansi_sequences = []
+    placeholder_text = self.gsub(/\e\[[0-9;]*m/) do |match|
+      ansi_sequences << match
+      "⟨ANSI#{ansi_sequences.length - 1}⟩"
+    end
+    
+    # Apply the regex to the placeholder text
+    result = if block_given?
+      placeholder_text.gsub(pattern, &block)
+    else
+      placeholder_text.gsub(pattern, replacement)
+    end
+    
+    # Restore ANSI sequences
+    ansi_sequences.each_with_index do |ansi, index|
+      result.gsub!("⟨ANSI#{index}⟩", ansi)
+    end
+    
+    result
+  end
+  
+  # Safe version of gsub! that modifies in place
+  def safe_gsub!(pattern, replacement = nil, &block)
+    result = safe_gsub(pattern, replacement, &block)
+    self.replace(result)
+  end
+  
+  # Check if string contains ANSI codes
+  def has_ansi?
+    !!(self =~ /\e\[[0-9;]*m/)
+  end
+  
+  # Get the visible length (without ANSI codes)
+  def visible_length
+    pure.length
+  end
+  
+  # Apply color only if not already colored
+  def safe_fg(color)
+    has_ansi? ? self : fg(color)
+  end
+  
+  def safe_bg(color)
+    has_ansi? ? self : bg(color)
+  end
 end
 
