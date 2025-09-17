@@ -10,12 +10,18 @@ Here's a somewhat simple example of a TUI program using rcurses: The [T-REX](htt
 
 And here's a much more involved example: The [RTFM](https://github.com/isene/RTFM) terminal file manager.
 
-# NOTE: Version 6.1.0 adds safe ANSI code handling!
+# NOTE: Version 6.1.1 adds optional error logging!
+- **Error logging** - Set `RCURSES_ERROR_LOG=1` to log crashes to `/tmp/rcurses_errors_PID.log`
+- **Race-condition free** - Uses process-specific filenames to avoid conflicts
+- **Stack trace preservation** - Full backtraces logged even when screen is cleared
+- **Completely opt-in** - Zero impact unless explicitly enabled
+- **Full backward compatibility** - All existing applications work unchanged
+
+Previous improvements in 6.1.0:
 - **Safe regex substitution** - New `safe_gsub` methods prevent ANSI code corruption
 - **ANSI detection** - Check if strings contain ANSI codes with `has_ansi?`
 - **Visible length calculation** - Get true text length with `visible_length`
 - **Conditional coloring** - Apply colors only when needed with `safe_fg`/`safe_bg`
-- **Full backward compatibility** - All existing applications work unchanged
 
 Previous major improvements in 5.0.0:
 - Memory leak fixes, terminal state protection, enhanced Unicode support
@@ -143,6 +149,22 @@ PS: Blink does not work in conjunction with setting a background color in urxvt.
 
 # Cleaning up upon exit
 End a program with `Rcurses.clear_screen` to clear the screen for any rcurses residues.
+
+# Error Logging (New in 6.1.1)
+When applications using rcurses crash, stack traces are typically lost because rcurses clears the screen on exit. To debug crashes, you can now enable error logging:
+
+```bash
+RCURSES_ERROR_LOG=1 my_rcurses_app
+```
+
+This will create a detailed error log at `/tmp/rcurses_errors_PID.log` containing:
+- Full stack trace with line numbers
+- Error class and message
+- Process information (PID, program name, working directory)
+- Ruby and rcurses version information
+- Relevant environment variables
+
+Each process gets its own log file (using PID) to prevent race conditions when multiple rcurses applications are running simultaneously. The feature is completely opt-in and has zero performance impact when disabled.
 
 # module Cursor
 To use this module, first do `include Rcurses::Cursor`. Create a new cursor object with `mycursor = Rcurses::Cursor`. Then you can apply the following methods to `mycursor`:

@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    6.1.0: Added safe_gsub methods to prevent ANSI code corruption
+# Version:    6.1.1: Added optional error logging with RCURSES_ERROR_LOG=1
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -124,15 +124,18 @@ module Rcurses
     
     # Private: Display error information after terminal cleanup
     def display_error(error)
+      # Log error to file if RCURSES_ERROR_LOG is set
+      log_error_to_file(error) if ENV['RCURSES_ERROR_LOG'] == '1'
+
       # Only display if we're in a TTY and not in a test environment
       return unless $stdout.tty?
-      
+
       # Add some spacing and make the error very visible
       puts "\n\n\e[41;37m                    APPLICATION CRASHED                    \e[0m"
       puts "\e[31m═══════════════════════════════════════════════════════════\e[0m"
       puts "\e[33mError Type:\e[0m #{error.class}"
       puts "\e[33mMessage:\e[0m    #{error.message}"
-      
+
       # Show backtrace if debug mode is enabled
       if ENV['DEBUG'] || ENV['RCURSES_DEBUG']
         puts "\n\e[33mBacktrace:\e[0m"
@@ -142,10 +145,53 @@ module Rcurses
       else
         puts "\n\e[90mTip: Set DEBUG=1 or RCURSES_DEBUG=1 to see the full backtrace\e[0m"
       end
-      
+
       puts "\e[31m═══════════════════════════════════════════════════════════\e[0m"
       puts "\e[33mNote:\e[0m The application state above shows where the error occurred."
+
+      # Show log file location if logging is enabled
+      if ENV['RCURSES_ERROR_LOG'] == '1'
+        puts "\e[33mError logged to:\e[0m /tmp/rcurses_errors_#{Process.pid}.log"
+      end
       puts ""
+    end
+
+    # Private: Log error details to a PID-specific file
+    def log_error_to_file(error)
+      return unless ENV['RCURSES_ERROR_LOG'] == '1'
+
+      log_file = "/tmp/rcurses_errors_#{Process.pid}.log"
+      timestamp = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+
+      begin
+        File.open(log_file, "a") do |f|
+          f.puts "=" * 60
+          f.puts "RCURSES ERROR LOG - #{timestamp}"
+          f.puts "PID: #{Process.pid}"
+          f.puts "Program: #{$0}"
+          f.puts "Working Directory: #{Dir.pwd}"
+          f.puts "Ruby Version: #{RUBY_VERSION}"
+          f.puts "Rcurses Version: 6.1.1"
+          f.puts "=" * 60
+          f.puts "Error Class: #{error.class}"
+          f.puts "Error Message: #{error.message}"
+          f.puts
+          f.puts "Full Backtrace:"
+          error.backtrace.each_with_index do |line, i|
+            f.puts "  #{i}: #{line}"
+          end
+          f.puts
+          f.puts "Environment Variables:"
+          ENV.select { |k, v| k.start_with?('RCURSES') || k == 'DEBUG' }.each do |k, v|
+            f.puts "  #{k}=#{v}"
+          end
+          f.puts "=" * 60
+          f.puts
+        end
+      rescue => file_error
+        # Silently fail if we can't write to log file - don't interfere with main error display
+        # This prevents cascading errors that could hide the original problem
+      end
     end
     
     # Public: Run a block with proper error handling and terminal cleanup
