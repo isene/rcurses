@@ -7,6 +7,7 @@ module Rcurses
     attr_accessor :border, :scroll, :text, :ix, :index, :align, :prompt
     attr_accessor :moreup, :moredown
     attr_accessor :record, :history
+    attr_accessor :multiline_buffer
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
       @max_h, @max_w = IO.console ? IO.console.winsize : [24, 80]
@@ -26,7 +27,8 @@ module Rcurses
       @record     = false  # Don't record history unless explicitly set to true
       @history    = []     # History array
       @max_history_size = 100  # Limit history to prevent memory leaks
-      
+      @multiline_buffer = []   # Buffer to store lines from multi-line paste
+
       ObjectSpace.define_finalizer(self, self.class.finalizer_proc)
     end
 
@@ -618,6 +620,7 @@ module Rcurses
         @pos = cont.length
         chr = ''
         history_index = @history.size
+        @multiline_buffer = []  # Clear buffer at start of input
 
         while chr != 'ESC'
           col(@x + prompt_len)
@@ -680,6 +683,15 @@ module Rcurses
           while IO.select([$stdin], nil, nil, 0)
             chr = $stdin.read_nonblock(1) rescue nil
             break unless chr
+            # Handle newlines in multi-line paste
+            if chr == "\n"
+              @multiline_buffer << cont.dup
+              cont = ""
+              @pos = 0
+              next
+            end
+            # Skip carriage returns
+            next if chr == "\r"
             if @pos < content_len
               cont.insert(@pos, chr)
               @pos += 1
