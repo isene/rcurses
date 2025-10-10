@@ -625,7 +625,14 @@ module Rcurses
         while chr != 'ESC'
           col(@x + prompt_len)
           cont = cont.slice(0, content_len)
-          print cont.ljust(content_len).c(fmt)
+          # Show indicator if multiline content detected
+          display_cont = cont
+          if @multiline_buffer && !@multiline_buffer.empty?
+            lines_indicator = " [+#{@multiline_buffer.size} lines]"
+            available = content_len - lines_indicator.length
+            display_cont = cont.slice(0, [available, 0].max) + lines_indicator if available > 0
+          end
+          print display_cont.ljust(content_len).c(fmt)
           # Calculate display width up to cursor position
           display_pos = @pos > 0 ? Rcurses.display_width(cont[0...@pos]) : 0
           col(@x + prompt_len + display_pos)
