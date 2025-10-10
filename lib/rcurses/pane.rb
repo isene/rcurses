@@ -507,7 +507,10 @@ module Rcurses
         while input_char != 'ESC'
           # Move the terminal cursor to the logical text cursor
           row(@y + @line)
-          col(@x + @pos)
+          # Calculate display width up to cursor position on current line
+          current_line_text = @txt[@ix + @line] || ""
+          display_pos = @pos > 0 ? Rcurses.display_width(current_line_text.pure[0...@pos]) : 0
+          col(@x + display_pos)
           input_char = getchr(flush: false)
           case input_char
           when 'C-L'
@@ -620,7 +623,9 @@ module Rcurses
           col(@x + prompt_len)
           cont = cont.slice(0, content_len)
           print cont.ljust(content_len).c(fmt)
-          col(@x + prompt_len + @pos)
+          # Calculate display width up to cursor position
+          display_pos = @pos > 0 ? Rcurses.display_width(cont[0...@pos]) : 0
+          col(@x + prompt_len + display_pos)
           chr = getchr(flush: false)
           case chr
           when 'LEFT'
@@ -689,7 +694,9 @@ module Rcurses
         end
       end
       prompt_len = @prompt.pure.length
-      new_col    = @x + prompt_len + (@pos > 0 ? @pos - 1 : 0)
+      # Calculate display width for final cursor position
+      final_display_pos = @pos > 0 ? Rcurses.display_width(cont[0...(@pos - 1).clamp(0, cont.length)]) : 0
+      new_col = @x + prompt_len + final_display_pos
       col(new_col)
       Rcurses::Cursor.hide
     end
