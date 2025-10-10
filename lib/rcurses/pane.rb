@@ -655,7 +655,13 @@ module Rcurses
             cont = ''
             @pos = 0
           when 'ENTER'
-            @text = cont
+            # If there are lines in multiline_buffer, add current line too
+            if @multiline_buffer && !@multiline_buffer.empty? && !cont.empty?
+              @multiline_buffer << cont.dup
+              @text = @multiline_buffer.shift # Return first line as @text
+            else
+              @text = cont
+            end
             chr = 'ESC'
           when 'UP'
             if @history.any? && history_index > 0
