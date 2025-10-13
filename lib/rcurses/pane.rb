@@ -662,9 +662,10 @@ module Rcurses
             cont = ''
             @pos = 0
           when 'ENTER'
-            # If there are lines in multiline_buffer, add current line too
-            if @multiline_buffer && !@multiline_buffer.empty? && !cont.empty?
-              @multiline_buffer << cont.dup
+            # If there are lines in multiline_buffer, handle multiline paste
+            if @multiline_buffer && !@multiline_buffer.empty?
+              # Add current line if it's not empty
+              @multiline_buffer << cont.dup unless cont.empty?
               @text = @multiline_buffer.shift # Return first line as @text
             else
               @text = cont
@@ -696,15 +697,13 @@ module Rcurses
           while IO.select([$stdin], nil, nil, 0)
             chr = $stdin.read_nonblock(1) rescue nil
             break unless chr
-            # Handle newlines in multi-line paste
-            if chr == "\n"
-              @multiline_buffer << cont.dup
+            # Handle newlines in multi-line paste (\n or \r)
+            if chr == "\n" || chr == "\r"
+              @multiline_buffer << cont.dup unless cont.empty?
               cont = ""
               @pos = 0
               next
             end
-            # Skip carriage returns
-            next if chr == "\r"
             if @pos < content_len
               cont.insert(@pos, chr)
               @pos += 1
