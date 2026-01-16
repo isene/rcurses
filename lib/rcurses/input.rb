@@ -47,9 +47,9 @@ module Rcurses
           return { 'A' => "C-UP", 'B' => "C-DOWN", 'C' => "C-RIGHT", 'D' => "C-LEFT" }[m[1]]
         end
 
-        # 7) Plain arrows
-        if m = seq.match(/\A\e\[([ABCD])\z/)
-          return { 'A' => "UP", 'B' => "DOWN", 'C' => "RIGHT", 'D' => "LEFT" }[m[1]]
+        # 7) Plain arrows and Home/End (xterm style)
+        if m = seq.match(/\A\e\[([ABCDHF])\z/)
+          return { 'A' => "UP", 'B' => "DOWN", 'C' => "RIGHT", 'D' => "LEFT", 'H' => "HOME", 'F' => "END" }[m[1]]
         end
 
         # 8) CSI + '~' sequences (Ins, Del, Home, End, PgUp, PgDn, F5-F12)
@@ -74,13 +74,15 @@ module Rcurses
                 end
         end
 
-        # 9) SS3 function keys F1-F4 and Ctrl+arrows
+        # 9) SS3 function keys F1-F4, Ctrl+arrows, and Home/End (application mode)
         if seq.start_with?("\eO") && seq.length == 3
           return case seq[2]
                 when 'P' then "F1"
                 when 'Q' then "F2"
                 when 'R' then "F3"
                 when 'S' then "F4"
+                when 'H' then "HOME"      # SS3 Home (kitty/wezterm application mode)
+                when 'F' then "END"       # SS3 End (kitty/wezterm application mode)
                 when 'a' then "C-UP"      # Some terminals send ESC O a for Ctrl+Up
                 when 'b' then "C-DOWN"    # Some terminals send ESC O b for Ctrl+Down
                 when 'c' then "C-RIGHT"   # Some terminals send ESC O c for Ctrl+Right
