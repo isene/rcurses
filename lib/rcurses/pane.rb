@@ -279,8 +279,8 @@ module Rcurses
           pl = 0 if pl < 0
           hl = pl / 2
           
-          # Check if text has ANSI background colors (48 or 4x codes)
-          has_bg_color = @txt[l] =~ /\e\[(?:\d+;)*4[0-9](?:;\d+)*m/ || @txt[l] =~ /\e\[(?:\d+;)*48(?:;\d+)*m/
+          # Check if text has ANSI background colors (48;5;N or 48;2;R;G;B)
+          has_bg_color = @txt[l] =~ /\e\[[\d;]*48;[25];/
           
           if @skip_colors || (@txt[l].include?("\e[") && !@bg)
             # No pane colors to apply, or text has ANSI but pane has no bg
