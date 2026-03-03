@@ -88,6 +88,7 @@ fg             | Foreground color for the Pane
 bg             | Background color for the Pane
 border         | Draw border around the Pane (=true) or not (=false), default being false
 scroll         | Whether to indicate more text to be shown above/below the Pane, default is true
+scroll_fg      | Color for scroll indicators (∆/∇), defaults to pane fg color if nil
 text           | The text/content of the Pane
 ix             | The line number at the top of the Pane, starts at 0, the first line of text in the Pane
 index          | An attribute that can be used to track the selected line/element in the pane
@@ -403,6 +404,11 @@ mypane.edit
 And - try running the example file `rcurses_example.rb`.
 
 # Version History
+
+## v6.1.8
+- Added `scroll_fg` pane attribute for custom scroll indicator (∆/∇) color
+- When set, scroll markers use this color instead of the pane's foreground color
+- Defaults to nil (existing behavior unchanged)
 
 ## v5.1.2 (2025-08-13)
 - Added comprehensive scrolling best practices documentation (SCROLLING_BEST_PRACTICES.md)

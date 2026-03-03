@@ -3,7 +3,7 @@ module Rcurses
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
     include Input
-    attr_accessor :x, :y, :w, :h, :fg, :bg
+    attr_accessor :x, :y, :w, :h, :fg, :bg, :scroll_fg
     attr_accessor :border, :scroll, :text, :ix, :index, :align, :prompt
     attr_accessor :moreup, :moredown
     attr_accessor :record, :history
@@ -27,6 +27,7 @@ module Rcurses
       @record     = false  # Don't record history unless explicitly set to true
       @history    = []     # History array
       @max_history_size = 100  # Limit history to prevent memory leaks
+      @scroll_fg  = nil    # Scroll indicator color (defaults to @fg)
       @multiline_buffer = []   # Buffer to store lines from multi-line paste
 
       ObjectSpace.define_finalizer(self, self.class.finalizer_proc)
@@ -366,13 +367,14 @@ module Rcurses
       # Draw scroll markers after printing the frame.
       if @scroll
         marker_col = @x + @w - 1
+        sfmt = @scroll_fg ? [(@scroll_fg).to_s, @bg.to_s].join(',') : fmt
         if @ix > 0
-          print "\e[#{@y};#{marker_col}H" + "∆".c(fmt)
+          print "\e[#{@y};#{marker_col}H" + "∆".c(sfmt)
         end
         # If there are more processed lines than fit in the pane
         # OR there remain raw lines to process, show the down marker.
         if (@txt.length - @ix) > @h || (@lazy_index < @raw_txt.size)
-          print "\e[#{@y + @h - 1};#{marker_col}H" + "∇".c(fmt)
+          print "\e[#{@y + @h - 1};#{marker_col}H" + "∇".c(sfmt)
         end
       end
 
