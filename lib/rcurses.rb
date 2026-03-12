@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    6.2.0: Popup widget, emoji picker, pane color cache, stdin flush
+# Version:    6.2.1: Replace Timeout with IO.select in getchr, revert ESC timeout
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -176,7 +176,7 @@ module Rcurses
           f.puts "Program: #{$0}"
           f.puts "Working Directory: #{Dir.pwd}"
           f.puts "Ruby Version: #{RUBY_VERSION}"
-          f.puts "Rcurses Version: 6.2.0"
+          f.puts "Rcurses Version: 6.2.1"
           f.puts "=" * 60
           f.puts "Error Class: #{error.class}"
           f.puts "Error Message: #{error.message}"
