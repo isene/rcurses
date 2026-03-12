@@ -10,24 +10,20 @@ Here's a somewhat simple example of a TUI program using rcurses: The [T-REX](htt
 
 And here's a much more involved example: The [RTFM](https://github.com/isene/RTFM) terminal file manager.
 
-# NOTE: Version 6.1.1 adds optional error logging!
-- **Error logging** - Set `RCURSES_ERROR_LOG=1` to log crashes to `/tmp/rcurses_errors_PID.log`
-- **Race-condition free** - Uses process-specific filenames to avoid conflicts
-- **Stack trace preservation** - Full backtraces logged even when screen is cleared
-- **Completely opt-in** - Zero impact unless explicitly enabled
-- **Full backward compatibility** - All existing applications work unchanged
+# What's new in 6.2.0
 
-Previous improvements in 6.1.0:
-- **Safe regex substitution** - New `safe_gsub` methods prevent ANSI code corruption
-- **ANSI detection** - Check if strings contain ANSI codes with `has_ansi?`
-- **Visible length calculation** - Get true text length with `visible_length`
-- **Conditional coloring** - Apply colors only when needed with `safe_fg`/`safe_bg`
+- **Popup widget** - New `Rcurses::Popup` class for modal dialogs with auto-centering, border, scrolling, and built-in key handling (see Popup section below)
+- **Built-in emoji picker** - Panes with `emoji = true` get a `Ctrl-E` shortcut in editline that opens an emoji overlay with category tabs, search, and cursor-positioned grid rendering
+- **Pane color cache invalidation** - Changing `fg` or `bg` on a Pane now forces a full repaint automatically (no more stale diff-rendering artifacts)
+- **Startup stdin flush** - `Rcurses.init!` now flushes pending stdin data (cursor position responses) to prevent first-keypress blocking
+- **Pane update flag** - Set `pane.update = false` to skip rendering during batch operations
+- **Wider ESC timeout** - Escape sequence detection timeout increased from 50ms to 150ms for better terminal compatibility
+- **Unicode display_width fixes** - Improved handling of FE0F variation selectors, ZWJ sequences, and dingbat characters
+- **Editline improvements** - Unicode-aware padding, content truncation, multiline paste joins all lines
 
-Previous major improvements in 5.0.0:
-- Memory leak fixes, terminal state protection, enhanced Unicode support
-- Error handling improvements and performance optimizations
+<img src="img/rcurses-emoji.png" width="400">
 
-Version 4.5 gave full RGB support in addition to 256-colors. Just write a color as a string - e.g. `"d533e0"` for a hexadecimal RGB color (or use the terminal 256 colors by supplying an integer in the range 0-255)
+Previous notable versions: 6.1.1 (error logging), 6.1.0 (safe ANSI methods), 6.0.0 (explicit init!), 5.0.0 (memory fixes), 4.5 (RGB colors)
 
 # Why?
 Having struggled with the venerable curses library and the ruby interface to it for many years, I finally got around to write an alternative - in pure Ruby.
@@ -96,6 +92,9 @@ align          | Text alignment in the Pane: "l" = lefts aligned, "c" = center, 
 prompt         | The prompt to print at the beginning of a one-liner Pane used as an input box
 moreup         | Set to true when there is more text above what is shown (top scroll bar i showing)
 moredown       | Set to true when there is more text below what is shown (bottom scroll bar i showing)
+update         | When false, refresh is a no-op (default: true). Useful during batch operations
+emoji          | When true, Ctrl-E in editline opens the built-in emoji picker (default: false)
+emoji_refresh  | Optional lambda/proc called after emoji picker closes, to redraw the UI
 
 The methods for Pane:
 
@@ -118,6 +117,57 @@ linedown       | Scroll down one line in the text
 lineup         | Scroll up one line in the text
 bottom         | Scroll to the bottom of the text in the pane
 top            | Scroll to the top of the text in the pane
+
+# class Popup
+
+A reusable popup overlay widget for modal dialogs, selection menus, and informational displays. Extends `Pane` with auto-centering, built-in scrolling, and keyboard handling.
+
+```ruby
+# Auto-centered popup with default size
+popup = Rcurses::Popup.new(w: 50, h: 20)
+
+# Explicit position
+popup = Rcurses::Popup.new(x: 10, y: 5, w: 50, h: 20, fg: 255, bg: 236)
+```
+
+**Modal usage** (blocks until ESC or ENTER):
+```ruby
+result = popup.modal(content_string)
+# Returns selected line index on ENTER, or nil on ESC
+# Built-in: UP/DOWN/PgUP/PgDN/HOME/END for scrolling
+```
+
+**Custom key handling**:
+```ruby
+result = popup.modal(content) do |chr, index|
+  case chr
+  when 'd'
+    delete_item(index)
+    :dismiss        # Close popup
+  when 'e'
+    "edit:#{index}" # Return custom value
+  end
+end
+```
+
+**Manual control** (non-blocking):
+```ruby
+popup.show(content_string)
+# ... your own input loop ...
+popup.dismiss(refresh_panes: [pane1, pane2])  # Clears area, refreshes underlying panes
+```
+
+# Emoji Picker
+
+Panes can opt in to a built-in emoji picker that opens with `Ctrl-E` during editline:
+
+```ruby
+pane.emoji = true                   # Enable Ctrl-E shortcut
+pane.emoji_refresh = -> { render }  # Optional: redraw UI after picker closes
+pane.editline                       # Ctrl-E now opens emoji overlay
+```
+
+The picker features category tabs (Tab/Shift-Tab), arrow navigation, search-by-keyword, and cursor-positioned grid rendering for pixel-perfect alignment regardless of Unicode width variations.
 
 # class String extensions
 Method extensions provided for the class String.
@@ -366,7 +416,12 @@ end
 **Problem:** `wait_readable` method not found.  
 **Solution:** Always include `require 'io/wait'` for stdin flush.
 
-### 5. Border Changes Not Visible
+### 5. `String#b` Overrides Ruby's Built-in Binary Method
+**Problem:** rcurses defines `String#b` for bold formatting, but Ruby's built-in `String#b` returns a binary-encoded copy of the string. Any code using `''.b` or `str.b` for binary I/O will silently get ANSI bold codes instead.
+**Impact:** Binary protocol parsers, socket readers, and encoding-sensitive code will break when rcurses is loaded.
+**Workaround:** Use `String.new(encoding: 'ASCII-8BIT')` instead of `''.b` when you need binary strings in code that coexists with rcurses.
+
+### 6. Border Changes Not Visible
 **Problem:** Changing pane border property doesn't show visual changes.  
 **Cause:** Border changes require explicit refresh to be displayed.  
 **Solution:** Use `border_refresh` method after changing border property.
@@ -404,6 +459,16 @@ mypane.edit
 And - try running the example file `rcurses_example.rb`.
 
 # Version History
+
+## v6.2.0
+- New `Popup` class for modal dialogs with auto-centering, border, scrolling, and key handling
+- Built-in emoji picker with category tabs, search, and cursor-positioned grid rendering
+- Pane `fg`/`bg` setters now invalidate diff-rendering cache (fixes color change artifacts)
+- `Rcurses.init!` flushes pending stdin data to prevent startup keypress blocking
+- New pane attributes: `update` (skip rendering), `emoji` (enable Ctrl-E picker), `emoji_refresh`
+- ESC sequence timeout widened from 50ms to 150ms for better terminal compatibility
+- Unicode `display_width` fixes: FE0F/FE0E treated as zero-width, improved ZWJ promotion
+- Editline: Unicode-aware padding, content truncation, multiline paste joins all lines
 
 ## v6.1.8
 - Added `scroll_fg` pane attribute for custom scroll indicator (∆/∇) color

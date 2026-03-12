@@ -13,7 +13,7 @@ module Rcurses
         # 2) If it's ESC, grab any quick trailing bytes
         seq = c
         if c == "\e"
-          if IO.select([$stdin], nil, nil, 0.05)
+          if IO.select([$stdin], nil, nil, 0.15)
             begin
               seq << $stdin.read_nonblock(16)
             rescue IO::WaitReadable, EOFError

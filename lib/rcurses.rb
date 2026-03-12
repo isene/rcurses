@@ -5,7 +5,7 @@
 # Web_site:   http://isene.com/
 # Github:     https://github.com/isene/rcurses
 # License:    Public domain
-# Version:    6.1.1: Added optional error logging with RCURSES_ERROR_LOG=1
+# Version:    6.2.0: Popup widget, emoji picker, pane color cache, stdin flush
 
 require 'io/console' # Basic gem for rcurses
 require 'io/wait'    # stdin handling
@@ -16,6 +16,7 @@ require_relative 'rcurses/general'
 require_relative 'rcurses/cursor'
 require_relative 'rcurses/input'
 require_relative 'rcurses/pane'
+require_relative 'rcurses/popup'
 
 module Rcurses
   class << self
@@ -67,6 +68,10 @@ module Rcurses
       %w[INT TERM].each do |sig|
         trap(sig) { cleanup!; exit }
       end
+
+      # Flush any pending stdin data (terminal position responses, etc.)
+      # This prevents cursor query responses from blocking the first getchr
+      $stdin.getc while $stdin.wait_readable(0)
 
       @initialized = true
     end
@@ -171,7 +176,7 @@ module Rcurses
           f.puts "Program: #{$0}"
           f.puts "Working Directory: #{Dir.pwd}"
           f.puts "Ruby Version: #{RUBY_VERSION}"
-          f.puts "Rcurses Version: 6.1.1"
+          f.puts "Rcurses Version: 6.2.0"
           f.puts "=" * 60
           f.puts "Error Class: #{error.class}"
           f.puts "Error Message: #{error.message}"

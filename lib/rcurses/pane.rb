@@ -3,11 +3,15 @@ module Rcurses
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
     include Input
-    attr_accessor :x, :y, :w, :h, :fg, :bg, :scroll_fg
+    attr_accessor :x, :y, :w, :h, :scroll_fg
+    attr_reader :fg, :bg
     attr_accessor :border, :scroll, :text, :ix, :index, :align, :prompt
     attr_accessor :moreup, :moredown
     attr_accessor :record, :history
     attr_accessor :multiline_buffer
+    attr_accessor :update
+    attr_accessor :emoji
+    attr_accessor :emoji_refresh  # Optional callback to redraw UI after emoji picker closes
 
     def initialize(x = 1, y = 1, w = 1, h = 1, fg = nil, bg = nil)
       @max_h, @max_w = IO.console ? IO.console.winsize : [24, 80]
@@ -29,8 +33,25 @@ module Rcurses
       @max_history_size = 100  # Limit history to prevent memory leaks
       @scroll_fg  = nil    # Scroll indicator color (defaults to @fg)
       @multiline_buffer = []   # Buffer to store lines from multi-line paste
+      @update     = true   # When false, refresh is a no-op
+      @emoji      = false  # Opt-in: C-E opens emoji picker in editline
+      @emoji_refresh = nil  # Optional lambda to redraw UI after emoji picker
 
       ObjectSpace.define_finalizer(self, self.class.finalizer_proc)
+    end
+
+    def fg=(value)
+      if @fg != value
+        @fg = value
+        @prev_frame = nil  # Force full repaint on color change
+      end
+    end
+
+    def bg=(value)
+      if @bg != value
+        @bg = value
+        @prev_frame = nil  # Force full repaint on color change
+      end
     end
 
     def text=(new_text)
@@ -176,6 +197,7 @@ module Rcurses
     # Diff-based refresh that minimizes flicker.
     # In this updated version we lazily process only the raw lines required to fill the pane.
     def refresh(cont = @text)
+      return @prev_frame&.join("\n") || "" unless @update
       begin
         @max_h, @max_w = IO.console.winsize
       rescue => e
@@ -253,7 +275,7 @@ module Rcurses
         
         raw_line = @raw_txt[@lazy_index]
         # If the raw line is short, no wrapping is needed.
-        if raw_line.respond_to?(:pure) && Rcurses.display_width(raw_line.pure) < @w
+        if raw_line.respond_to?(:pure) && Rcurses.display_width(raw_line.pure) <= @w
           processed = [raw_line]
         else
           processed = split_line_with_ansi(raw_line, @w)
@@ -344,19 +366,8 @@ module Rcurses
       # restore wrap, then also reset SGR and scroll-region one more time
       diff_buf << "\e[#{o_row};#{o_col}H\e[?7h\e[0m\e[r"
       begin
-        # Debug: check what's actually being printed
-        if diff_buf.include?("Purpose") && diff_buf.include?("[38;5;")
-          File.open("/tmp/rcurses_debug.log", "a") do |f|
-            f.puts "=== PRINT DEBUG ==="
-            f.puts "diff_buf sample: #{diff_buf[0..200].inspect}"
-            f.puts "Has escape byte 27: #{diff_buf.bytes.include?(27)}"
-            f.puts "Escape count: #{diff_buf.bytes.count(27)}"
-          end
-        end
-        
         print diff_buf
       rescue => e
-        # If printing fails, at least try to restore terminal state
         begin
           print "\e[0m\e[?25h\e[?7h"
         rescue
@@ -618,6 +629,7 @@ module Rcurses
         print @prompt.c(fmt)
         prompt_len = @prompt.pure.length
         content_len = @w - prompt_len
+        return nil if content_len < 1
         cont = @text.pure.slice(0, content_len)
         @pos = cont.length
         chr = ''
@@ -626,15 +638,31 @@ module Rcurses
 
         while chr != 'ESC'
           col(@x + prompt_len)
-          cont = cont.slice(0, content_len)
+          # Truncate content to fit display width
+          disp_w = Rcurses.display_width(cont)
+          while disp_w > content_len && cont.length > 0
+            cont = cont[0..-2]
+            disp_w = Rcurses.display_width(cont)
+          end
+          @pos = cont.length if @pos > cont.length
           # Show indicator if multiline content detected
           display_cont = cont
           if @multiline_buffer && !@multiline_buffer.empty?
             lines_indicator = " [+#{@multiline_buffer.size} lines]"
-            available = content_len - lines_indicator.length
-            display_cont = cont.slice(0, [available, 0].max) + lines_indicator if available > 0
+            available = content_len - Rcurses.display_width(lines_indicator)
+            if available > 0
+              # Truncate cont to fit indicator
+              trunc = cont
+              while Rcurses.display_width(trunc) > available && trunc.length > 0
+                trunc = trunc[0..-2]
+              end
+              display_cont = trunc + lines_indicator
+            end
           end
-          print display_cont.ljust(content_len).c(fmt)
+          # Pad to full width using spaces (each space = 1 column)
+          pad_needed = content_len - Rcurses.display_width(display_cont)
+          padded = display_cont + (" " * [pad_needed, 0].max)
+          print padded.c(fmt)
           # Calculate display width up to cursor position
           display_pos = @pos > 0 ? Rcurses.display_width(cont[0...@pos]) : 0
           col(@x + prompt_len + display_pos)
@@ -664,11 +692,10 @@ module Rcurses
             cont = ''
             @pos = 0
           when 'ENTER'
-            # If there are lines in multiline_buffer, handle multiline paste
+            # If there are lines in multiline_buffer, join all pasted lines
             if @multiline_buffer && !@multiline_buffer.empty?
-              # Add current line if it's not empty
               @multiline_buffer << cont.dup unless cont.empty?
-              @text = @multiline_buffer.shift # Return first line as @text
+              @text = @multiline_buffer.join("\n")
             else
               @text = cont
             end
@@ -689,6 +716,21 @@ module Rcurses
               cont = ""
               @pos = 0
             end
+          when 'C-E'
+            if @emoji
+              require_relative 'emoji' unless defined?(Rcurses::EmojiPicker)
+              picked = Rcurses::EmojiPicker.pick(self)
+              if picked
+                cont.insert(@pos, picked)
+                @pos += picked.length
+              end
+              # Redraw UI behind the overlay (full refresh to clear overlay artifacts)
+              @emoji_refresh.call if @emoji_refresh
+              # Redraw prompt line
+              row(@y)
+              col(@x)
+              print @prompt.c(fmt)
+            end
           when /^.$/
             if @pos < content_len
               cont.insert(@pos, chr)
@@ -696,9 +738,16 @@ module Rcurses
             end
           end
 
+          last_was_cr = false
           while IO.select([$stdin], nil, nil, 0)
             chr = $stdin.read_nonblock(1) rescue nil
             break unless chr
+            # Normalize \r\n to a single newline: skip \n after \r
+            if chr == "\n" && last_was_cr
+              last_was_cr = false
+              next
+            end
+            last_was_cr = (chr == "\r")
             # Handle newlines in multi-line paste (\n or \r)
             if chr == "\n" || chr == "\r"
               @multiline_buffer << cont.dup unless cont.empty?
