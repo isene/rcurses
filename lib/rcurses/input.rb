@@ -3,17 +3,16 @@ module Rcurses
     def getchr(t = nil, flush: true)
       begin
         # 1) Read a byte (with optional timeout)
-        begin
-          c = t ? Timeout.timeout(t) { $stdin.getch } : $stdin.getch
-        rescue Timeout::Error
-          return nil
+        if t
+          return nil unless IO.select([$stdin], nil, nil, t)
         end
+        c = $stdin.getch
         
 
         # 2) If it's ESC, grab any quick trailing bytes
         seq = c
         if c == "\e"
-          if IO.select([$stdin], nil, nil, 0.15)
+          if IO.select([$stdin], nil, nil, 0.05)
             begin
               seq << $stdin.read_nonblock(16)
             rescue IO::WaitReadable, EOFError
