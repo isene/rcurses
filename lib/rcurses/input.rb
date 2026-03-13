@@ -2,33 +2,51 @@ module Rcurses
   module Input
     def getchr(t = nil, flush: true)
       begin
+        # Reinforce raw mode on every call. External programs (e.g. hyperlist)
+        # can leave the terminal in cooked/echo mode; raw! fixes it without
+        # the save/restore cycle of getch's raw{} block.
+        $stdin.raw!
         # 1) Read a byte (with optional timeout)
+        #    Use IO.select for timeout (clean syscall, no background thread).
         if t
           return nil unless IO.select([$stdin], nil, nil, t)
         end
-        c = $stdin.getch
-        
+        c = $stdin.getc
 
-        # 2) If it's ESC, grab any quick trailing bytes
+
+        # 2) If it's ESC, read escape sequence byte-by-byte
+        #    (greedy read_nonblock can swallow the NEXT keypress)
         seq = c
         if c == "\e"
           if IO.select([$stdin], nil, nil, 0.05)
             begin
-              seq << $stdin.read_nonblock(16)
+              b = $stdin.read_nonblock(1)
+              seq << b
+              # CSI sequence: \e[ ... (letter or ~)
+              # SS3 sequence: \eO (one more byte)
+              if b == '[' || b == 'O'
+                while IO.select([$stdin], nil, nil, 0.05)
+                  b = $stdin.read_nonblock(1)
+                  seq << b
+                  # CSI terminates on a letter (A-Z, a-z) or ~
+                  # SS3 terminates after one char
+                  break if b =~ /[A-Za-z~]/
+                end
+              end
             rescue IO::WaitReadable, EOFError
             end
           end
         end
-        
-        
+
+
 
         # 3) Single ESC alone
         return "ESC" if seq == "\e"
 
-        # 4) ShiftâTAB
+        # 4) Shift‐TAB
         return "S-TAB" if seq == "\e[Z"
 
-        # 5) Legacy singleâchar shiftâarrows (your old working ones)
+        # 5) Legacy single‐char shift‐arrows (your old working ones)
         case seq
         when "\e[a" then return "S-UP"
         when "\e[b" then return "S-DOWN"
@@ -36,11 +54,11 @@ module Rcurses
         when "\e[d" then return "S-LEFT"
         end
 
-        # 6) CSI style shiftâarrows (e.g. ESC [1;2A )
+        # 6) CSI style shift‐arrows (e.g. ESC [1;2A )
         if m = seq.match(/\A\e\[\d+;2([ABCD])\z/)
           return { 'A' => "S-UP", 'B' => "S-DOWN", 'C' => "S-RIGHT", 'D' => "S-LEFT" }[m[1]]
         end
-        
+
         # 6b) CSI style ctrl-arrows (e.g. ESC [1;5A )
         if m = seq.match(/\A\e\[\d+;5([ABCD])\z/)
           return { 'A' => "C-UP", 'B' => "C-DOWN", 'C' => "C-RIGHT", 'D' => "C-LEFT" }[m[1]]
@@ -137,4 +155,3 @@ module Rcurses
     end
   end
 end
-
