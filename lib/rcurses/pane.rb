@@ -225,16 +225,9 @@ module Rcurses
         @y = [[1, @y].max, @max_h - @h + 1].min
       end
 
-      begin
-        o_row, o_col = pos
-      rescue => e
-        # Fallback cursor position
-        o_row, o_col = 1, 1
-      end
-
+      # Save cursor with ANSI save (no stdin read needed)
       # Hide cursor, disable auto-wrap, reset all SGR and scroll margins
-      # (so stray underline, scroll regions, etc. can’t leak out)
-      STDOUT.print "\e[?25l\e[?7l\e[0m\e[r"
+      STDOUT.print "\e7\e[?25l\e[?7l\e[0m\e[r"
 
       fmt = [@fg.to_s, @bg.to_s].join(',')
       
@@ -363,8 +356,8 @@ module Rcurses
         end
       end
 
-      # restore wrap, then also reset SGR and scroll-region one more time
-      diff_buf << "\e[#{o_row};#{o_col}H\e[?7h\e[0m\e[r"
+      # Restore cursor, re-enable wrap, reset SGR and scroll-region
+      diff_buf << "\e8\e[?7h\e[0m\e[r"
       begin
         print diff_buf
       rescue => e
