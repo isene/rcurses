@@ -69,6 +69,10 @@ module Rcurses
         trap(sig) { cleanup!; exit }
       end
 
+      # Switch to alternate screen buffer (like vim, mutt, less, htop).
+      # This isolates the TUI from stray output by other processes.
+      print "\e[?1049h"
+
       # Flush any pending stdin data (terminal position responses, etc.)
       # This prevents cursor query responses from blocking the first getchr
       $stdin.getc while $stdin.wait_readable(0)
@@ -107,6 +111,9 @@ module Rcurses
         system("stty sane 2>/dev/null")
       end
       
+      # Restore main screen buffer (leave alternate screen)
+      print "\e[?1049l"
+
       # Only clear screen if there's no error to display
       # This preserves the error context on screen
       if @error_to_display.nil?
@@ -116,7 +123,7 @@ module Rcurses
         print "\e[999;1H"  # Move to bottom-left
         print "\e[K"       # Clear current line
       end
-      
+
       Cursor.show
 
       @cleaned_up = true
