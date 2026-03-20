@@ -344,6 +344,12 @@ module Rcurses
           line_str = @skip_colors ? " " * @w : " ".c(fmt) * @w
         end
 
+        # Hard-clip line to pane width to prevent overflow into adjacent panes
+        visible_w = Rcurses.display_width(line_str.respond_to?(:pure) ? line_str.pure : line_str.gsub(/\e\[[0-9;]*m/, ''))
+        if visible_w > @w
+          line_str = line_str.respond_to?(:shorten) ? line_str.shorten(@w) : line_str[0, @w]
+        end
+
         new_frame << line_str
       end
 
@@ -356,13 +362,13 @@ module Rcurses
         end
       end
 
-      # Restore cursor, re-enable wrap, reset SGR and scroll-region
-      diff_buf << "\e8\e[?7h\e[0m\e[r"
+      # Restore cursor, reset SGR and scroll-region (keep auto-wrap disabled)
+      diff_buf << "\e8\e[0m\e[r"
       begin
         print diff_buf
       rescue => e
         begin
-          print "\e[0m\e[?25h\e[?7h"
+          print "\e[0m\e[?25h"
         rescue
         end
       end
