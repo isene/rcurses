@@ -23,12 +23,12 @@ module Rcurses
         # Reset terminal
         print "\e[0m\e[?25h\e[?7h\e[r"
         STDOUT.flush
-      rescue
+      rescue StandardError
         # Fallback restoration
         begin
           STDIN.cooked! rescue nil
           STDIN.echo = true rescue nil
-        rescue
+        rescue StandardError
         end
       end
     end

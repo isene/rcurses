@@ -159,20 +159,8 @@ module Rcurses
       bottom_row = @y + @h
 
       if @border
-        # Determine border characters based on environment
-        if ENV['RCURSES_BORDERS'] == 'ascii'
-          tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
-        else
-          # Check if locale supports UTF-8
-          locale = ENV['LANG'] || ENV['LC_ALL'] || ENV['LC_CTYPE'] || ''
-          if locale.downcase.include?('utf-8') || locale.downcase.include?('utf8')
-            tl, tr, bl, br, h, v = '┌', '┐', '└', '┘', '─', '│'
-          else
-            # Fallback to ASCII for non-UTF-8 locales
-            tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
-          end
-        end
-        
+        tl, tr, bl, br, h, v = border_chars
+
         fmt = [@fg.to_s, @bg.to_s].join(',')
         top = (tl + h * @w + tr).c(fmt)
         STDOUT.print "\e[#{top_row};#{left_col}H" + top
@@ -366,10 +354,10 @@ module Rcurses
       diff_buf << "\e8\e[0m\e[r"
       begin
         print diff_buf
-      rescue => e
+      rescue StandardError
         begin
           print "\e[0m\e[?25h"
-        rescue
+        rescue StandardError
         end
       end
       @prev_frame = new_frame
@@ -389,20 +377,8 @@ module Rcurses
       end
 
       if @border
-        # Determine border characters based on environment
-        if ENV['RCURSES_BORDERS'] == 'ascii'
-          tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
-        else
-          # Check if locale supports UTF-8
-          locale = ENV['LANG'] || ENV['LC_ALL'] || ENV['LC_CTYPE'] || ''
-          if locale.downcase.include?('utf-8') || locale.downcase.include?('utf8')
-            tl, tr, bl, br, h, v = '┌', '┐', '└', '┘', '─', '│'
-          else
-            # Fallback to ASCII for non-UTF-8 locales
-            tl, tr, bl, br, h, v = '+', '+', '+', '+', '-', '|'
-          end
-        end
-        
+        tl, tr, bl, br, h, v = border_chars
+
         # top
         print "\e[#{@y - 1};#{@x - 1}H" + (tl + h * @w + tr).c(fmt)
         # sides
@@ -473,10 +449,7 @@ module Rcurses
       else
         @line -= 1
       end
-      begin
-        @pos = [@pos, @txt[@ix + @line].length].min
-      rescue
-      end
+      @pos = [@pos, @txt[@ix + @line]&.length || 0].min
     end
 
     def down
@@ -485,10 +458,7 @@ module Rcurses
       elsif @line + @ix + 1 < @txt.length
         @line += 1
       end
-      begin
-        @pos = [@pos, @txt[@ix + @line].length].min
-      rescue
-      end
+      @pos = [@pos, @txt[@ix + @line]&.length || 0].min
     end
 
     def parse(cont)
@@ -776,6 +746,19 @@ module Rcurses
     end
 
     private
+
+    def border_chars
+      if ENV['RCURSES_BORDERS'] == 'ascii'
+        ['+', '+', '+', '+', '-', '|']
+      else
+        locale = ENV['LANG'] || ENV['LC_ALL'] || ENV['LC_CTYPE'] || ''
+        if locale.downcase.include?('utf-8') || locale.downcase.include?('utf8')
+          ["\u250C", "\u2510", "\u2514", "\u2518", "\u2500", "\u2502"]
+        else
+          ['+', '+', '+', '+', '-', '|']
+        end
+      end
+    end
 
     def flush_stdin
       while IO.select([$stdin], nil, nil, 0.005)
