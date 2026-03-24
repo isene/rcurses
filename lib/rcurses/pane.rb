@@ -612,6 +612,7 @@ module Rcurses
         @multiline_buffer = []  # Clear buffer at start of input
 
         while chr != 'ESC'
+          row(@y)
           col(@x + prompt_len)
           # Truncate content to fit display width
           disp_w = Rcurses.display_width(cont)
@@ -638,8 +639,9 @@ module Rcurses
           pad_needed = content_len - Rcurses.display_width(display_cont)
           padded = display_cont + (" " * [pad_needed, 0].max)
           print padded.c(fmt)
-          # Calculate display width up to cursor position
+          # Calculate display width up to cursor position and ensure correct row
           display_pos = @pos > 0 ? Rcurses.display_width(cont[0...@pos]) : 0
+          row(@y)
           col(@x + prompt_len + display_pos)
           chr = getchr(flush: false)
           case chr
