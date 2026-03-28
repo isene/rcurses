@@ -1,4 +1,7 @@
 module Rcurses
+  ANSI_RE = /\e\[[0-9;]*m/.freeze
+  ANSI_CSI_RE = /\e\[[0-9;]*[A-HJKSTfhlnr]/.freeze
+
   class Pane
     require 'clipboard'  # Ensure the 'clipboard' gem is installed
     include Cursor
@@ -60,6 +63,11 @@ module Rcurses
         @history.shift while @history.size > @max_history_size
       end
       @text = new_text
+      @line_count = nil  # Invalidate cache
+    end
+
+    def line_count
+      @line_count ||= @text.to_s.count("\n") + 1
     end
 
     def ask(prompt, text)
@@ -113,7 +121,7 @@ module Rcurses
 
     def linedown
       @ix += 1
-      @ix = @text.split("\n").length if @ix > @text.split("\n").length - 1
+      @ix = line_count - 1 if @ix > line_count - 1
       refresh
     end
 
@@ -125,7 +133,8 @@ module Rcurses
 
     def pagedown
       @ix = @ix + @h - 1
-      @ix = @text.split("\n").length - @h if @ix > @text.split("\n").length - @h
+      max = line_count - @h
+      @ix = max if @ix > max
       refresh
     end
 
@@ -136,7 +145,7 @@ module Rcurses
     end
 
     def bottom
-      @ix = @text.split("\n").length - @h
+      @ix = line_count - @h
       refresh
     end
 
@@ -334,12 +343,12 @@ module Rcurses
 
         # Strip non-SGR ANSI sequences (cursor movement, clear, etc.)
         # Keep only SGR sequences (ending in 'm') for colors/styles
-        line_str = line_str.gsub(/\e\[[0-9;]*[A-HJKSTfhlnr]/, '')
+        line_str = line_str.gsub(ANSI_CSI_RE, '')
         # Strip any raw control characters (except tab and ANSI ESC sequences)
         line_str = line_str.gsub(/[\x00-\x08\x0b-\x1a\x7f]/, '?')
 
         # Hard-clip line to pane width to prevent overflow into adjacent panes
-        visible_w = Rcurses.display_width(line_str.respond_to?(:pure) ? line_str.pure : line_str.gsub(/\e\[[0-9;]*m/, ''))
+        visible_w = Rcurses.display_width(line_str.respond_to?(:pure) ? line_str.pure : line_str.gsub(ANSI_RE, ''))
         if visible_w > @w
           line_str = line_str.respond_to?(:shorten) ? line_str.shorten(@w) : line_str[0, @w]
         end
@@ -799,7 +808,7 @@ module Rcurses
       begin
         return [""] if line.nil? || w <= 0
         
-        ansi_regex = /\e\[[0-9;]*m/
+        ansi_regex = ANSI_RE
         result = []
         tokens = line.scan(/(\e\[[0-9;]*m|[^\e]+)/).flatten.compact
         current_line = ''

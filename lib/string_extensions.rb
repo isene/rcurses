@@ -92,8 +92,9 @@ class String
   end
 
   # Strip all ANSI SGR sequences
+  ANSI_SGR_RE = /\e\[\d+(?:;\d+)*m/.freeze
   def pure
-    gsub(/\e\[\d+(?:;\d+)*m/, '')
+    gsub(ANSI_SGR_RE, '')
   end
 
   # Remove stray leading/trailing reset if the string has no other styling
@@ -162,7 +163,7 @@ class String
   def safe_gsub(pattern, replacement = nil, &block)
     # Store all ANSI sequences and replace with placeholders
     ansi_sequences = []
-    placeholder_text = self.gsub(/\e\[[0-9;]*m/) do |match|
+    placeholder_text = self.gsub(Rcurses::ANSI_RE) do |match|
       ansi_sequences << match
       "⟨ANSI#{ansi_sequences.length - 1}⟩"
     end
@@ -190,7 +191,7 @@ class String
   
   # Check if string contains ANSI codes
   def has_ansi?
-    !!(self =~ /\e\[[0-9;]*m/)
+    !!(self =~ Rcurses::ANSI_RE)
   end
   
   # Get the visible length (without ANSI codes)
