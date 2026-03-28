@@ -58,9 +58,19 @@ module Rcurses
     end
   end
   
-  # Simple, fast display_width function
+  # Display width cache
+  @dw_cache = {}
+  DW_CACHE_MAX = 2000
+
+  def self.clear_dw_cache
+    @dw_cache.clear
+  end
+
+  # Simple, fast display_width function (cached)
   def self.display_width(str)
     return 0 if str.nil? || str.empty?
+    cached = @dw_cache[str]
+    return cached if cached
 
     width = 0
     prev_regional = false
@@ -162,6 +172,8 @@ module Rcurses
       prev_regional = false
       after_zwj = false
     end
+    @dw_cache.clear if @dw_cache.size >= DW_CACHE_MAX
+    @dw_cache[str] = width
     width
   end
   
