@@ -575,10 +575,16 @@ module Rcurses
             right
           end
 
-          # Handle any buffered input
+          # Handle any buffered input (multi-line paste)
           while IO.select([$stdin], nil, nil, 0)
             input_char = $stdin.read_nonblock(1) rescue nil
             break unless input_char
+            # ESC byte starts an escape sequence (arrow key, etc.)
+            # Push it back for getchr to parse properly on next iteration
+            if input_char == "\e"
+              $stdin.ungetbyte(0x1b)
+              break
+            end
             posx = calculate_posx
             content.insert(posx, input_char)
             right
@@ -728,6 +734,12 @@ module Rcurses
           while IO.select([$stdin], nil, nil, 0)
             chr = $stdin.read_nonblock(1) rescue nil
             break unless chr
+            # ESC byte starts an escape sequence (arrow key, etc.)
+            # Push it back for getchr to parse properly on next iteration
+            if chr == "\e"
+              $stdin.ungetbyte(0x1b)
+              break
+            end
             # Normalize \r\n to a single newline: skip \n after \r
             if chr == "\n" && last_was_cr
               last_was_cr = false
