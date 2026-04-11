@@ -477,10 +477,10 @@ module Rcurses
     end
 
     def parse(cont)
-      cont.gsub!(/\*(.+?)\*/, '\1'.b)
-      cont.gsub!(/\/(.+?)\//, '\1'.i)
-      cont.gsub!(/_(.+?)_/, '\1'.u)
-      cont.gsub!(/#(.+?)#/, '\1'.r)
+      cont.gsub!(/\*(.+?)\*/, '\1'.bd)
+      cont.gsub!(/\/(.+?)\//, '\1'.it)
+      cont.gsub!(/_(.+?)_/, '\1'.ul)
+      cont.gsub!(/#(.+?)#/, '\1'.rv)
       cont.gsub!(/<([^|]+)\|([^>]+)>/) do
         text = $2; codes = $1
         text.c(codes)

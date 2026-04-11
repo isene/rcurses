@@ -43,26 +43,26 @@ class TestStringExtensions < Minitest::Test
   end
 
   def test_bold
-    result = "hi".b
+    result = "hi".bd
     assert_includes result, "\e[1m"
     assert_includes result, "hi"
     assert_includes result, "\e[22m"
   end
 
   def test_italic
-    result = "hi".i
+    result = "hi".it
     assert_includes result, "\e[3m"
     assert_includes result, "hi"
     assert_includes result, "\e[23m"
   end
 
   def test_underline
-    result = "hi".u
+    result = "hi".ul
     assert_includes result, "\e[4m"
   end
 
   def test_reverse
-    result = "hi".r
+    result = "hi".rv
     assert_includes result, "\e[7m"
   end
 
