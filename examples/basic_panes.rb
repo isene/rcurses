@@ -14,10 +14,10 @@ pane_right  = Rcurses::Pane.new(@max_w/2 + 1,      2,     @max_w/2, @max_h - 2, 
 pane_left.border     = true # Adding a border to the left pane
 
 # Add content to the panes
-pane_top.text        = Time.now.to_s[0..15].b + "   Welcome to the rcurses example program"
+pane_top.text        = Time.now.to_s[0..15].bold + "   Welcome to the rcurses example program"
 pane_left.text       = `ls --color`
 pane_right.text      = "Output of free:\n\n" + `free`
-pane_bottom.prompt   = "Enter any text and press ENTER: ".b # The prompt text before the user starts writing content
+pane_bottom.prompt   = "Enter any text and press ENTER: ".bold # The prompt text before the user starts writing content
 
 pane_top.refresh     # This is the order of drawing/refreshing the panes
 pane_left.refresh    # ...then the left pane

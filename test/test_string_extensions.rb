@@ -43,7 +43,7 @@ class TestStringExtensions < Minitest::Test
   end
 
   def test_bold
-    result = "hi".b
+    result = "hi".bold
     assert_includes result, "\e[1m"
     assert_includes result, "hi"
     assert_includes result, "\e[22m"

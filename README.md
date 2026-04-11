@@ -179,13 +179,13 @@ Method         | Description
 fg(fg)         | Set text to be printed with the foreground color `fg` (example: `"TEST".fg(84)`)
 bg(bg)         | Set text to be printed with the background color `bg` (example: `"TEST".bg("dd32a9")`)
 fb(fg, bg)     | Set text to be printed with the foreground color `fg` and background color `bg` (example: `"TEST".fb(84,196)`)
-b              | Set text to be printed in bold (example: `"TEST".b`)
+bold           | Set text to be printed in bold (example: `"TEST".bold`)
 i              | Set text to be printed in italic (example: `"TEST".i`)
 u              | Set text to be printed underlined (example: `"TEST".u`)
 l              | Set text to be printed blinking (example: `"TEST".l`)
 r              | Set text to be printed in reverse colors (example: `"TEST".r`)
 c(code)        | Use coded format like "TEST".c("204,45,bui") to print "TEST" in bold, underline italic, fg=204 and bg=45 (the format is `.c("fg,bg,biulr")`)
-pure           | Strip text of any "dressing" (example: with `text = "TEST".b`, you will have bold text in the variable `text`, then with `text.pure` it will show "uncoded" or pure text)
+pure           | Strip text of any "dressing" (example: with `text = "TEST".bold`, you will have bold text in the variable `text`, then with `text.pure` it will show "uncoded" or pure text)
 clean_ansi     | Strip seemingly uncolored strings of ansi code (those that are enclosed in "\e[0m"
 shorten(n)     | Shorten the pure version of the string to 'n' characters, preserving any ANSI coding
 inject("chars",pos) | Inject "chars" at position 'pos' in the pure version of the string (if 'pos' is '-1', then append at end). Preserves any ANSI code
@@ -416,10 +416,9 @@ end
 **Problem:** `wait_readable` method not found.  
 **Solution:** Always include `require 'io/wait'` for stdin flush.
 
-### 5. `String#b` Overrides Ruby's Built-in Binary Method
-**Problem:** rcurses defines `String#b` for bold formatting, but Ruby's built-in `String#b` returns a binary-encoded copy of the string. Any code using `''.b` or `str.b` for binary I/O will silently get ANSI bold codes instead.
-**Impact:** Binary protocol parsers, socket readers, and encoding-sensitive code will break when rcurses is loaded.
-**Workaround:** Use `String.new(encoding: 'ASCII-8BIT')` instead of `''.b` when you need binary strings in code that coexists with rcurses.
+### 5. `String#bold` Avoids Ruby's Built-in Binary Method
+**Problem:** Ruby already defines `String#b` to return a binary-encoded copy of the string. Reusing that method name for bold formatting causes conflicts in encoding-sensitive code.
+**Resolution:** rcurses uses `String#bold` for bold formatting, leaving Ruby's built-in `String#b` untouched.
 
 ### 6. Border Changes Not Visible
 **Problem:** Changing pane border property doesn't show visual changes.  
@@ -450,7 +449,7 @@ require 'rcurses'
 @max_h, @max_w = IO.console.winsize
 mypane = Rcurses::Pane.new(@max_w/2, 30, 30, 10, 19, 229)
 mypane.border = true
-mypane.text = "Hello".i + " World!".b.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
+mypane.text = "Hello".i + " World!".bold.i + "\n \n" + "rcurses".r + " " + "is cool".c("16,212")
 mypane.refresh
 mypane.edit
 ```

@@ -45,7 +45,7 @@ class String
   end
 
   # bold, italic, underline, blink, reverse
-  def b; color(self, "\e[1m",   "\e[22m"); end
+  def bold; color(self, "\e[1m",   "\e[22m"); end
   def i; color(self, "\e[3m",   "\e[23m"); end
   def u; color(self, "\e[4m",   "\e[24m"); end
   def l; color(self, "\e[5m",   "\e[25m"); end
@@ -208,4 +208,3 @@ class String
     has_ansi? ? self : bg(color)
   end
 end
-

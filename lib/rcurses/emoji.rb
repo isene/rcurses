@@ -197,13 +197,13 @@ module Rcurses
                 tab_rows << []
                 row_w = 0
               end
-              tab_rows.last << (i == cat_idx ? tab.b.r : tab)
+              tab_rows.last << (i == cat_idx ? tab.bold.r : tab)
               row_w += tw
             end
             tab_rows.each { |tr| lines << tr.join("") }
             header_lines = tab_rows.size
           else
-            lines << " Search: #{search}".b
+            lines << " Search: #{search}".bold
             header_lines = 1
           end
           lines << ""

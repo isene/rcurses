@@ -477,7 +477,7 @@ module Rcurses
     end
 
     def parse(cont)
-      cont.gsub!(/\*(.+?)\*/, '\1'.b)
+      cont.gsub!(/\*(.+?)\*/, '\1'.bold)
       cont.gsub!(/\/(.+?)\//, '\1'.i)
       cont.gsub!(/_(.+?)_/, '\1'.u)
       cont.gsub!(/#(.+?)#/, '\1'.r)
@@ -954,4 +954,3 @@ module Rcurses
     end
   end
 end
-
